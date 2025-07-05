@@ -1,102 +1,191 @@
+"use client";
+
 import Image from "next/image";
+import { Eye, EyeOff, FacebookIcon } from "lucide-react";
+import { useState } from "react";
+import Link from "next/link";
+import {z} from "zod";
+import FloatingInput from "@/components/self/floatingInput";
+import axios from "axios";
+import { useRouter } from "next/navigation";
 
-export default function Home() {
+interface login {
+  email: string;
+  password: string;
+}
+
+interface Error {
+  message: string;
+  problem: string;
+}
+
+const loginSchema = z.object({
+  email: z
+    .string()
+    .refine(
+      (val) =>
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+      { message: "Enter a valid email" }
+    ),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .regex(/^(?=.*[A-Za-z])(?=.*\d).+$/, "Password must be alphanumeric (A–Z, a–z, 0–9)"),
+});
+
+export default function login() {
+  const [show, setShow] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [login, setLogin] = useState<login>({
+    email: "",
+    password: "",
+  });
+  const [formErrors, setFormErrors] = useState<Partial<Record<keyof login, string>>>({});
+
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLogin((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+  
+    const result = loginSchema.safeParse(login);
+
+    if (!result.success) {
+      const fieldErrors: Partial<Record<keyof login, string>> = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as keyof login;
+        fieldErrors[field] = err.message;
+      });
+      setFormErrors(fieldErrors);
+      return; // don't submit if validation fails
+    }
+    else{
+      setFormErrors({});
+      console.log("Form submitted:", login);
+    }
+  
+    console.log(result);
+  };
+  
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="h-screen w-screen bg-black text-white flex justify-center items-center">
+      <div className="flex gap-0 justify-center">
+        {/* Image Header */}
+        <div className="hidden lg:block">
+          <Image src="/instaheader.png" alt="logo" width={700} height={700} />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+        <div className="ml-10 flex flex-col items-center mt-10">
+          {/*Image Text*/}
+          <div className="mb-6">
+            <Image
+              src="/instagram-wordmark.svg"
+              alt="Instagram logo"
+              width={200}
+              height={200}
+            />
+          </div>
+
+          {/*Login Form*/}
+          <form className="flex flex-col gap-4 w-64" onSubmit={handleSubmit}>
+          <FloatingInput
+              name="email"
+              label="Email address"
+              value={login.email}
+              onChange={handleChange}
+              required
+            />
+            {formErrors.email && (
+              <p className="text-red-500 text-sm pl-1">{formErrors.email}</p>
+            )}
+            {error && error.problem === "email" && (
+              <p className="text-red-500 text-sm pl-1">{error.message}</p>
+            )}
+
+            <FloatingInput
+              name="password"
+              label="Password"
+              type={show ? "text" : "password"}
+              value={login.password}
+              onChange={handleChange}
+              required
+              minLength={6}
+            >
+              <div onClick={() => setShow(!show)}>
+                {show ? <EyeOff size={16} /> : <Eye size={16} />}
+              </div>
+            </FloatingInput>
+            {formErrors.password && <p className="text-red-500 text-sm pl-1">{formErrors.password}</p>}
+            {error && error.problem === "password" && (
+              <p className="text-red-500 text-sm pl-1">{error.message}</p>
+            )}
+
+            <button
+              type="submit"
+              className="bg-blue-500 text-white py-1 rounded-lg hover:bg-blue-600 transition cursor-pointer"
+            >
+              Login
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="flex items-center gap-2 my-4">
+            <div className="flex-grow h-px bg-zinc-700" />
+            <span className="text-sm text-zinc-400">OR</span>
+            <div className="flex-grow h-px bg-zinc-700" />
+          </div>
+
+          {/* Facebook Login */}
+          <button className="text-blue-400 text-sm font-medium mb-3 cursor-pointer flex gap-1">
+            <FacebookIcon />
+            Log in with Facebook
+          </button>
+
+          {/* Forgot Password */}
+          <div className="text-sm text-blue-50 hover:underline cursor-pointer text-center">
+            Forgotten your password?
+          </div>
+
+          {/* Don't have account */}
+          <div className="text-sm text-blue-50 text-center mt-5">
+            Don't have an account?
+            <Link
+              href="/accounts/emailsignup"
+              className="text-blue-400 cursor-pointer text-sm font-medium"
+            >
+              <span> Sign up</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+      {/* Footer */}
+      <footer className="absolute bottom-4 w-full flex flex-col items-center text-zinc-500 text-xs">
+        {/* Top Link Row */}
+        <div className="flex flex-wrap justify-center gap-4 mb-5">
+          <span className="hover:underline cursor-pointer">Meta</span>
+          <span className="hover:underline cursor-pointer">About</span>
+          <span className="hover:underline cursor-pointer">Blog</span>
+          <span className="hover:underline cursor-pointer">Jobs</span>
+          <span className="hover:underline cursor-pointer">Help</span>
+          <span className="hover:underline cursor-pointer">API</span>
+          <span className="hover:underline cursor-pointer">Privacy</span>
+          <span className="hover:underline cursor-pointer">Terms</span>
+          <span className="hover:underline cursor-pointer">Locations</span>
+          <span className="hover:underline cursor-pointer">Instagram Lite</span>
+          <span className="hover:underline cursor-pointer">Threads</span>
+          <span className="hover:underline cursor-pointer">
+            Contact uploading and non-users
+          </span>
+          <span className="hover:underline cursor-pointer">Meta Verified</span>
+        </div>
+
+        {/* Language + Copyright */}
+        <div className="flex gap-4">
+          <span className="hover:underline cursor-pointer">English (UK)</span>
+          <span>© 2025 Instagram from Meta</span>
+        </div>
       </footer>
     </div>
   );
