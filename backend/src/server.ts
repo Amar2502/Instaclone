@@ -10,6 +10,6 @@ app.get("/", (req, res) => {
 
 app.listen(config.PORT, () => {
     console.log(`Server is Running on Port ${config.PORT}`);
-    console.log(`http://localhost:5000/`);
+    console.log(`http://localhost:${config.PORT}/`);
 })
 
