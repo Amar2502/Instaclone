@@ -21,7 +21,6 @@ interface OTPFormProps {
 
 export default function OTPForm({onSuccess, data}: OTPFormProps) {
   const [otp, setOTP] = useState("");
-  const [success, setSuccess] = useState(false);
   const [resendmessage, setResendmessage] = useState<string | null>(null);
 
 

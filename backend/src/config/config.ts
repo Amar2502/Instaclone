@@ -8,6 +8,7 @@ const config = {
     DB_USER: process.env.DB_USER || 'root',
     DB_PASSWORD: process.env.DB_PASSWORD || '',
     APP_PASSWORD: process.env.APP_PASSWORD || '',
+    JWT_SECRET: process.env.JWT_SECRET || '',
 }
 
 export default config;
