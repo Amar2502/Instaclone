@@ -10,6 +10,7 @@ import Saved from './saved';
 import Tagged from './tagged';
 import type { RootState } from '@/app/redux/store';
 import axios from 'axios';
+import { cropToSquareAndCompress } from '@/lib/croptosquareandcompress';
 
 interface User {
   username: string;
@@ -37,6 +38,9 @@ const Profile: React.FC = () => {
   const urlUsername = pathname.split('/')[1];
   const activeTab = searchParams.get('tab') || 'posts';
   const isAuthor = author === urlUsername;
+  // const username = isAuthor ? author : urlUsername;
+  const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
 
   const [user, setUser] = useState<User | null>(null);
 
@@ -50,14 +54,48 @@ const Profile: React.FC = () => {
 
   useEffect(() => {
     axios.get(`http://localhost:8080/users/${urlUsername}`)
-    .then((res) => {
-      console.log(res.data.user);
-      setUser(res.data.user);
-    })
-    .catch((err) => {
-      console.log(err);
-    });
+      .then((res) => {
+        console.log(res.data.user);
+        setUser(res.data.user);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   }, [urlUsername]);
+
+
+
+  const handleImageUpload = async (file: File) => {
+    setUploading(true);
+    if (!file || !author) return;
+
+    // Show preview instantly
+    setPreview(URL.createObjectURL(file));
+
+    try {
+      const processedImage = await cropToSquareAndCompress(file);
+
+      console.log("processedImage.size", processedImage.size);
+
+      const formData = new FormData();
+      formData.append("file", processedImage);
+      formData.append("username", author as string);
+
+      const res = await axios.post(
+        "http://localhost:8080/users/upload-profile-picture",
+        formData,
+        { withCredentials: true }
+      );
+
+      console.log("Upload response:", res.data);
+    } catch (error) {
+      console.error("Image upload failed:", error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+
 
   return (
     <div className="min-h-screen bg-black text-white flex font-sans">
@@ -73,16 +111,33 @@ const Profile: React.FC = () => {
                 className="w-full h-full rounded-full overflow-hidden relative cursor-pointer group"
               >
                 <img
-                  src="/placeholder.jpg"
+                  src={preview || user?.profile_picture}
                   alt="Profile"
                   className="w-full h-full object-cover rounded-full"
                 />
+
+                {/* Upload hover camera icon */}
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-full">
                   <Camera size={48} className="text-white" strokeWidth={1} />
                 </div>
+
+                {/* Spinner overlay while uploading */}
+                {uploading && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-full z-10">
+                    <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
               </div>
-              <input type="file" accept="image/*" ref={inputRef} className="hidden" />
+
+              <input
+                type="file"
+                accept="image/*"
+                ref={inputRef}
+                onChange={(e) => handleImageUpload(e.target.files?.[0] as File)}
+                className="hidden"
+              />
             </div>
+
 
             {/* Profile Info */}
             <div className="flex-1 flex flex-col gap-4 pt-2">
@@ -132,11 +187,10 @@ const Profile: React.FC = () => {
               {TABS.map((tab, i) => (
                 <div
                   key={tab.name}
-                  className={`flex items-center justify-center px-0 py-4 cursor-pointer ${
-                    activeTab === tab.name
+                  className={`flex items-center justify-center px-0 py-4 cursor-pointer ${activeTab === tab.name
                       ? 'border-t border-white'
                       : 'text-[#a8a8a8] hover:text-white transition-colors'
-                  } ${i !== TABS.length - 1 && 'mr-[60px]'}`}
+                    } ${i !== TABS.length - 1 && 'mr-[60px]'}`}
                   onClick={() => changeTab(tab.name)}
                 >
                   <span className="mr-[6px]">{tab.icon}</span>
