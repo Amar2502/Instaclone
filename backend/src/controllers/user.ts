@@ -34,55 +34,61 @@ interface User extends RowDataPacket {
   
 }
 
-
 export const registerUser = async (req: Request, res: Response) => {
-    const { email, password, fullName, username, date_of_birth } = req.body as RegisterUserRequest;
-    console.log(req.body);
-  
-    try {
-      const [existingUser] = await pool.query(
-        "SELECT * FROM users WHERE email = ?",
-        [email]
-      );
-  
-      console.log("existingUser", existingUser);
-  
-      if ((existingUser as any[]).length > 0) {
-        return res.status(400).json({ message: "Email already exists", problem: "email" });
-      }
-  
-      console.log("email does not exixts");
-      
-  
-      const [usernameExists] = await pool.query(
-        "SELECT * FROM users WHERE username = ?",
-        [username]
-      );
-  
-      console.log(usernameExists);
-      
-      
-      if((usernameExists as any[]).length > 0) {
-        return res.status(400).json({ message: "Username already exists", problem: "username" });
-      }
-  
-      console.log("username doesnt exists");
-      
-  
-      const hashedPassword = await hashPassword(password);
-  
-      console.log("hashedPassword", hashedPassword);
-  
-      const newUser = await pool.query(
-        "INSERT INTO users (email, password, fullName, username, date_of_birth) VALUES (?, ?, ?, ?, ?)",
-        [email, hashedPassword, fullName, username, date_of_birth]
-      );
-  
-      res.status(201).json({ message: "User registered successfully", user: newUser });
-    } catch (error) {
-      console.error("❌ Error registering user:", error);
-      res.status(500).json({ message: "Internal Server Error" });
+  const { email, password, fullName, username, date_of_birth } = req.body as RegisterUserRequest;
+
+  try {
+    const [existingUser] = await pool.query(
+      "SELECT * FROM users WHERE email = ?",
+      [email]
+    );
+
+    if ((existingUser as any[]).length > 0) {
+      return res.status(400).json({ message: "Email already exists", problem: "email" });
     }
+
+    const [usernameExists] = await pool.query(
+      "SELECT * FROM users WHERE username = ?",
+      [username]
+    );
+
+    if ((usernameExists as any[]).length > 0) {
+      return res.status(400).json({ message: "Username already exists", problem: "username" });
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    const [insertResult]: any = await pool.query(
+      "INSERT INTO users (email, password, fullName, username, date_of_birth) VALUES (?, ?, ?, ?, ?)",
+      [email, hashedPassword, fullName, username, date_of_birth]
+    );
+
+    // ✅ Fetch the newly inserted user
+    const [newUser] = await pool.query<User[]>(
+      "SELECT * FROM users WHERE user_id = ?",
+      [insertResult.insertId]
+    );
+
+    // ✅ Create JWT token
+    const token = jwt.sign(
+      { user_id: newUser[0].user_id, username: newUser[0].username, email: newUser[0].email },
+      config.JWT_SECRET,
+      { expiresIn: "30d" }
+    );
+
+    // ✅ Set token cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "strict",
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
+
+    res.status(201).json({ message: "User registered and logged in", user: newUser[0], token });
+
+  } catch (error) {
+    console.error("❌ Error registering user:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 };
 
 export const loginUser = async (req: Request, res: Response) => {
@@ -107,7 +113,7 @@ export const loginUser = async (req: Request, res: Response) => {
     }
 
     const token = jwt.sign(
-      {username: rows[0].username, email: rows[0].email},
+      { user_id: rows[0].user_id, username: rows[0].username, email: rows[0].email},
       config.JWT_SECRET,
       {expiresIn: "30d"}
     )
@@ -158,6 +164,26 @@ export const getUserByUsername = async (req: Request, res: Response) => {
     return res.status(200).json({ user: publicUser });
   } catch (error) {
     console.error('Error fetching user:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+export const getSomeAccounts = async (req: Request, res: Response) => {
+  const { username } = req.params;
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT user_id, username, profile_picture, fullname 
+       FROM users 
+       WHERE username != ? 
+       ORDER BY RAND() 
+       LIMIT 8`,
+      [username]
+    );
+
+    return res.status(200).json({ accounts: rows });
+  } catch (error) {
+    console.error('Error fetching random accounts:', error);
     return res.status(500).json({ message: 'Internal Server Error' });
   }
 };

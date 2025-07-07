@@ -47,7 +47,7 @@ export default function EmailSignup() {
       {step === 3 && (
         <OTPForm
           data={userData}
-          onSuccess={() => router.push("/")}
+          onSuccess={() => router.push("/onboarding")}
         />
       )}
     </div>

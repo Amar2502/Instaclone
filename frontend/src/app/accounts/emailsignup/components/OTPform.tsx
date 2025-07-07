@@ -40,7 +40,7 @@ export default function OTPForm({onSuccess, data}: OTPFormProps) {
     axios.post("http://localhost:8080/otp/verify-otp", { email: data.email, otp }, { withCredentials: true })
       .then((res) => {
         console.log(res.data);
-        axios.post("http://localhost:8080/users/register", register)
+        axios.post("http://localhost:8080/users/register", register, { withCredentials: true })
       .then((res) => {
         console.log("Response:", res.data);
         onSuccess();

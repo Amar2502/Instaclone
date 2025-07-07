@@ -3,6 +3,7 @@ import userroutes from "./routes/userroutes";
 import otproutes from "./routes/otproutes";
 import cors from "cors";
 import cookieParser from "cookie-parser";   
+import followroutes from "./routes/followroutes";
 
 const app = express()
 
@@ -15,5 +16,6 @@ app.use(cors({
 
 app.use("/users", userroutes);
 app.use("/otp", otproutes); 
+app.use("/following", followroutes);
 
 export default app;

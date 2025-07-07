@@ -14,7 +14,7 @@ const AuthInit = () => {
       .then((res) => {
         if (res.data.loggedIn) {
           console.log(res.data);
-          dispatch(setUserInfo({ username: res.data.username, isLoggedIn: true }));
+          dispatch(setUserInfo({ username: res.data.username, isLoggedIn: true, user_id: res.data.user_id }));
         }
       })
       .catch((err) => {

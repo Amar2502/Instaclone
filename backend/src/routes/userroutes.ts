@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { registerUser, loginUser, getUserByUsername } from "../controllers/user";
+import { registerUser, loginUser, getUserByUsername, getSomeAccounts } from "../controllers/user";
 import isAuthenticated from "../middleware/isAuthenticated";
 import { isauth } from "../controllers/auth";
 
@@ -9,5 +9,6 @@ router.post("/register", registerUser as any);
 router.post("/login", loginUser as any);
 router.get("/isauth", isAuthenticated, isauth as any);
 router.get("/:username", getUserByUsername as any);
+router.get("/get-some-accounts/:username", getSomeAccounts as any);
 
 export default router;
