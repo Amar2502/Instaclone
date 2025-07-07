@@ -7,12 +7,10 @@ type MainLayoutProps = {
 export default function MainLayout({ children }: MainLayoutProps) {
   return (
     <div className="flex h-screen bg-black text-white">
-      {/* Sidebar (Fixed height, non-scrollable) */}
-      {/* <div className="w-64 h-screen sticky top-0 border-r border-zinc-800 bg-black"> */}
+      {/* Sidebar */}
         <Sidebar/>
-      {/* </div> */}
 
-      {/* Main Content (Scrollable) */}
+      {/* Main Content */}
       <div className="flex-1 overflow-y-auto flex flex-col">
         <div className="flex-1">{children}</div>
         

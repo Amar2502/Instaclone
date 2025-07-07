@@ -2,7 +2,7 @@
 
 import axios from "axios";
 import { useState, useEffect } from "react";
-import Login from "./login"; // ✅ Capitalized
+import Login from "./login";
 import Homepage from "./homepage";
 import LoadingHomepage from "@/components/self/loadinghomepage";
 import MainLayout from "@/components/self/mainlayout";

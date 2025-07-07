@@ -3,10 +3,12 @@
 import { Home, Search, Compass, MessageCircle, Heart, PlusSquare, User, MoreHorizontal, Film, Bot, MessageSquare } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/app/redux/store';
 
 export default function Sidebar() {  
 
-    const username = "test";
+    const username = useSelector((state: RootState) => state.auth.username);
 
     return (
         <div className="w-64 p-4 border-r border-zinc-800 flex flex-col">
@@ -24,7 +26,7 @@ export default function Sidebar() {
                         <Home size={24} />
                         <span className="text-base">Home</span>
                 </Link>
-                <Link href="/search" className="flex items-center gap-4 p-3 hover:bg-zinc-800 rounded-lg cursor-pointer">
+                <Link href="/" className="flex items-center gap-4 p-3 hover:bg-zinc-800 rounded-lg cursor-pointer">
                     <Search size={24} />
                     <span className="text-base">Search</span>
                 </Link>
@@ -36,7 +38,7 @@ export default function Sidebar() {
                     <Film size={24} />
                     <span className="text-base">Reels</span>
                 </Link>
-                <Link href="/" className="flex items-center gap-4 p-3 hover:bg-zinc-800 rounded-lg cursor-pointer">
+                <Link href="/direct/inbox" className="flex items-center gap-4 p-3 hover:bg-zinc-800 rounded-lg cursor-pointer">
                     <MessageCircle size={24} />
                     <span className="text-base">Messages</span>
                 </Link>

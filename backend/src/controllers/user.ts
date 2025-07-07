@@ -19,15 +19,19 @@ interface LoginUserRequest {
 }
 
 interface User extends RowDataPacket {
-  id: number;
+  user_id: number;
   username: string;
-  fullname: string;
-  identifier: string;
-  password: string;
-  bio: string | null;
-  created_at: Date;
-  auth_source: string;
   profile_picture: string;
+  fullName: string;
+  email: string;
+  password: string;
+  bio: string;
+  created_at: Date;
+  date_of_birth: Date;
+  followers: number;
+  followings: number;
+  posts: number;
+  
 }
 
 
@@ -121,3 +125,39 @@ export const loginUser = async (req: Request, res: Response) => {
     return res.status(400).json({ message: "Internal Server Error" });
   } 
 }
+
+export const getUserByUsername = async (req: Request, res: Response) => {
+  const { username } = req.params;
+
+  console.log(username);
+
+  try {
+    const [rows]: any = await pool.query(
+      'SELECT * FROM users WHERE username = ?',
+      [username]
+    );
+
+    console.log(rows);
+
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const publicUser = {
+      username: rows[0].username,
+      profile_picture: rows[0].profile_picture,
+      fullName: rows[0].fullname,
+      bio: rows[0].bio,
+      followers: rows[0].followers,
+      followings: rows[0].followings,
+      posts: rows[0].posts,
+    };   
+    
+    console.log("publicUser", publicUser);
+
+    return res.status(200).json({ user: publicUser });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
