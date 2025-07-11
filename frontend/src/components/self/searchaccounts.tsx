@@ -6,6 +6,8 @@ import { Skeleton } from "../ui/skeleton";
 import axios from "axios";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import Link from "next/link";
+import { setActiveTab } from "@/app/redux/slices/sidebarslice";
+import { useDispatch } from "react-redux";
 
 interface User {
   user_id: number;
@@ -18,7 +20,7 @@ export default function SearchAccounts() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState<User[]>([]);
-
+  const dispatch = useDispatch();
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       if (search.trim().length > 1) {
@@ -90,7 +92,9 @@ export default function SearchAccounts() {
           </div>
         ) : accounts.length > 0 ? (
           accounts.map((acc, i) => (
-            <Link key={acc.user_id} href={`/${acc.username}`}>
+            <Link key={acc.user_id} href={`/${acc.username}`} onClick={() => {
+              dispatch(setActiveTab({ activeTab: 'profile' }));
+            }}>
               <div className="flex items-center justify-between py-2 border-b border-zinc-800">
                 <div className="flex gap-3 items-center">
                   <Avatar className="w-10 h-10">

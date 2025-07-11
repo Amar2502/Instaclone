@@ -1,5 +1,3 @@
-// controllers/auth.ts (or wherever your auth check is)
-
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import config from '../config/config';

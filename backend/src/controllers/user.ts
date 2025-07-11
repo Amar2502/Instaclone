@@ -150,6 +150,7 @@ export const getUserByUsername = async (req: Request, res: Response) => {
     }
 
     const publicUser = {
+      user_id: rows[0].user_id,
       username: rows[0].username,
       profile_picture: rows[0].profile_picture,
       fullName: rows[0].fullname,

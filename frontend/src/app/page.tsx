@@ -6,31 +6,18 @@ import Login from "./login";
 import Homepage from "./homepage";
 import LoadingHomepage from "@/components/self/loadinghomepage";
 import MainLayout from "@/components/self/mainlayout";
+import { useSelector } from "react-redux";
 
 export default function Start() {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  
+  const isLoading = useSelector((state: any) => state.auth.isLoading);
+  const isLoggedIn = useSelector((state: any) => state.auth.isLoggedIn);
 
-  useEffect(() => {
-    const checkLogin = async () => {
-      try {
-        await axios.get("http://localhost:8080/users/isauth", {
-          withCredentials: true,
-        });
-        setLoggedIn(true);
-        setIsLoading(false);
-      } catch (error) {
-        setLoggedIn(false);
-        setIsLoading(false);
-      }
-    };
-
-    checkLogin();
-  }, []);
+  console.log('isLoading', isLoading);
 
   return (
     <div>
-      {isLoading ? <LoadingHomepage/> : loggedIn ? <MainLayout><Homepage/></MainLayout> : <Login />}
+      {isLoading ? <LoadingHomepage/> : isLoggedIn ? <MainLayout><Homepage/></MainLayout> : <Login />}
     </div>
   );
 }

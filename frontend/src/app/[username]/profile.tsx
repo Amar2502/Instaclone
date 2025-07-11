@@ -3,16 +3,25 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useSelector } from 'react-redux';
-import { Grid3X3, Bookmark, Users, Camera, Plus, Settings } from 'lucide-react';
+import { Grid3X3, Bookmark, Users, Camera, Plus, Settings, MoreHorizontal } from 'lucide-react';
+import axios from 'axios';
 
 import Posts from './posts';
 import Saved from './saved';
 import Tagged from './tagged';
-import type { RootState } from '@/app/redux/store';
-import axios from 'axios';
+
 import { cropToSquareAndCompress } from '@/lib/croptosquareandcompress';
+import type { RootState } from '@/app/redux/store';
+import { Button } from '@/components/ui/button';
+
+const TABS = [
+  { name: 'posts', icon: <Grid3X3 size={20} /> },
+  { name: 'saved', icon: <Bookmark size={20} /> },
+  { name: 'tagged', icon: <Users size={20} /> },
+];
 
 interface User {
+  user_id: string;
   username: string;
   profile_picture: string;
   fullName: string;
@@ -22,93 +31,64 @@ interface User {
   posts: number;
 }
 
-const TABS = [
-  { name: 'posts', icon: <Grid3X3 size={12} /> },
-  { name: 'saved', icon: <Bookmark size={12} /> },
-  { name: 'tagged', icon: <Users size={12} /> },
-];
-
-const Profile: React.FC = () => {
+export default function Profile() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const author = useSelector((state: RootState) => state.auth.username);
-  const urlUsername = pathname.split('/')[1];
+  const username = pathname.split('/')[1];
   const activeTab = searchParams.get('tab') || 'posts';
-  const isAuthor = author === urlUsername;
-  // const username = isAuthor ? author : urlUsername;
+  const isAuthor = useSelector((state: RootState) => state.auth.username) === username;
+
+  const [user, setUser] = useState<User | null>(null);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
 
-  const [user, setUser] = useState<User | null>(null);
-
-  const handleClick = () => inputRef.current?.click();
-
-  const changeTab = (tab: string) => {
-    const newParams = new URLSearchParams(searchParams.toString());
-    newParams.set('tab', tab);
-    router.push(`/${urlUsername}?${newParams.toString()}`);
-  };
-
   useEffect(() => {
-    axios.get(`http://localhost:8080/users/${urlUsername}`)
-      .then((res) => {
-        console.log(res.data.user);
-        setUser(res.data.user);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }, [urlUsername]);
-
-
+    axios.get(`http://localhost:8080/users/${username}`)
+      .then(res => setUser(res.data.user))
+      .catch(err => console.error(err));
+  }, [username]);
 
   const handleImageUpload = async (file: File) => {
+    if (!file || !isAuthor) return;
     setUploading(true);
-    if (!file || !author) return;
-
-    // Show preview instantly
     setPreview(URL.createObjectURL(file));
 
     try {
-      const processedImage = await cropToSquareAndCompress(file);
-
-      console.log("processedImage.size", processedImage.size);
-
+      const processed = await cropToSquareAndCompress(file);
       const formData = new FormData();
-      formData.append("file", processedImage);
-      formData.append("username", author as string);
+      formData.append('file', processed);
+      formData.append('username', username);
 
-      const res = await axios.post(
-        "http://localhost:8080/users/upload-profile-picture",
-        formData,
-        { withCredentials: true }
-      );
-
-      console.log("Upload response:", res.data);
-    } catch (error) {
-      console.error("Image upload failed:", error);
+      await axios.post('http://localhost:8080/users/upload-profile-picture', formData, {
+        withCredentials: true,
+      });
+    } catch (err) {
+      console.error('Upload failed:', err);
     } finally {
       setUploading(false);
     }
   };
 
-
+  const changeTab = (tab: string) => {
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.set('tab', tab);
+    router.push(`/${username}?${newParams}`);
+  };
 
   return (
-    <div className="min-h-screen bg-black text-white flex font-sans">
+    <div className="min-h-screen bg-black text-white flex">
       <div className="flex-1 flex flex-col m-3">
-        <div className="flex-1 max-w-[935px] mx-auto w-full px-5 pt-[30px]">
-
+        <div className="max-w-[935px] w-full mx-auto px-5 pt-8">
           {/* Profile Header */}
-          <div className="flex gap-10 mb-11 items-start">
+          <div className="flex gap-10 mb-11">
             {/* Profile Picture */}
             <div className="relative w-[120px] h-[120px]">
               <div
-                onClick={handleClick}
-                className="w-full h-full rounded-full overflow-hidden relative cursor-pointer group"
+                onClick={isAuthor ? () => inputRef.current?.click() : undefined}
+                className={`w-full h-full rounded-full overflow-hidden relative ${isAuthor ? 'cursor-pointer group' : ''}`}
               >
                 <img
                   src={preview || user?.profile_picture}
@@ -116,12 +96,12 @@ const Profile: React.FC = () => {
                   className="w-full h-full object-cover rounded-full"
                 />
 
-                {/* Upload hover camera icon */}
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-full">
-                  <Camera size={48} className="text-white" strokeWidth={1} />
-                </div>
+                {isAuthor && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                    <Camera size={48} className="text-white" strokeWidth={1} />
+                  </div>
+                )}
 
-                {/* Spinner overlay while uploading */}
                 {uploading && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-full z-10">
                     <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -129,62 +109,62 @@ const Profile: React.FC = () => {
                 )}
               </div>
 
-              <input
-                type="file"
-                accept="image/*"
-                ref={inputRef}
-                onChange={(e) => handleImageUpload(e.target.files?.[0] as File)}
-                className="hidden"
-              />
+              {isAuthor && (
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={inputRef}
+                  onChange={(e) => handleImageUpload(e.target.files?.[0] as File)}
+                  className="hidden"
+                />
+              )}
             </div>
-
 
             {/* Profile Info */}
             <div className="flex-1 flex flex-col gap-4 pt-2">
               <div className="flex flex-wrap items-center gap-4">
-                <h2 className="text-2xl font-normal">{user?.username}</h2>
-                {isAuthor && (
+                <h2 className="text-2xl">{user?.username}</h2>
+
+                {isAuthor ? (
                   <>
-                    <button className="btn-secondary">Edit Profile</button>
-                    <button className="btn-secondary">View Archive</button>
+                    <Button className="btn-secondary rounded-lg cursor-pointer">Edit Profile</Button>
                     <Settings size={22} className="hover:text-[#a8a8a8] cursor-pointer" strokeWidth={1.5} />
+                  </>
+                ) : (
+                  <>
+                    <Button className="rounded-lg cursor-pointer bg-blue-600 hover:bg-blue-500">Follow</Button>
+                    <Button className="btn-secondary rounded-lg cursor-pointer">Message</Button>
+                    <MoreHorizontal size={22} className="hover:text-[#a8a8a8] cursor-pointer" strokeWidth={1.5} />
                   </>
                 )}
               </div>
 
               <div className="flex gap-8">
-                <div>
-                  <span className="font-medium">{user?.posts}</span>{' '}
-                  <span className="text-[#a8a8a8]">posts</span>
-                </div>
-                <div>
-                  <span className="font-medium">{user?.followers}</span>{' '}
-                  <span className="text-[#a8a8a8]">followers</span>
-                </div>
-                <div>
-                  <span className="font-medium">{user?.followings}</span>{' '}
-                  <span className="text-[#a8a8a8]">following</span>
-                </div>
+                <div><span className="font-medium">{user?.posts}</span> posts</div>
+                <div><span className="font-medium">{user?.followers}</span> followers</div>
+                <div><span className="font-medium">{user?.followings}</span> following</div>
               </div>
 
-              <div className="text-sm font-semibold">{user?.fullName || 'Full Name'}</div>
+              <div className="text-sm font-semibold">{user?.fullName}</div>
             </div>
           </div>
 
-          {/* New Post Button */}
-          <div className="flex justify-start mb-11">
-            <div className="flex flex-col items-center mr-8">
-              <div className="w-[77px] h-[77px] border-2 border-[#262626] rounded-full flex items-center justify-center cursor-pointer hover:border-[#a8a8a8] transition-colors mb-1">
-                <Plus size={44} className="text-[#a8a8a8]" strokeWidth={1} />
+          {/* Upload New Post Button */}
+          {isAuthor && (
+            <div className="flex mb-11">
+              <div className="flex flex-col items-center mr-8 cursor-pointer hover:border-[#a8a8a8] transition-colors">
+                <div className="w-[77px] h-[77px] border-2 border-[#262626] rounded-full flex items-center justify-center mb-1">
+                  <Plus size={44} className="text-[#a8a8a8]" strokeWidth={1} />
+                </div>
+                <span className="text-xs text-[#a8a8a8]">New</span>
               </div>
-              <span className="text-[12px] text-[#a8a8a8] font-normal">New</span>
             </div>
-          </div>
+          )}
 
           {/* Tabs */}
           <div className="border-t border-[#262626]">
             <div className="flex justify-center">
-              {TABS.map((tab, i) => (
+              {TABS.filter(tab => isAuthor || tab.name !== 'saved').map((tab, i) => (
                 <div
                   key={tab.name}
                   className={`flex items-center justify-center px-0 py-4 cursor-pointer ${activeTab === tab.name
@@ -194,20 +174,19 @@ const Profile: React.FC = () => {
                   onClick={() => changeTab(tab.name)}
                 >
                   <span className="mr-[6px]">{tab.icon}</span>
-                  <span className="text-[12px] font-semibold tracking-[1px] uppercase">{tab.name}</span>
+                  {/* <span className="text-[12px] font-semibold uppercase">{tab.name}</span> */}
                 </div>
               ))}
+
             </div>
           </div>
 
           {/* Tab Content */}
           {activeTab === 'posts' && <Posts />}
-          {activeTab === 'saved' && <Saved />}
+          {isAuthor && activeTab === 'saved' && <Saved />}
           {activeTab === 'tagged' && <Tagged />}
         </div>
       </div>
     </div>
   );
-};
-
-export default Profile;
+}
