@@ -44,3 +44,70 @@ export const followUser = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+
+export const getFollowers = async (req: Request, res: Response) => {
+  const { user_id } = req.params;
+
+  if (!user_id) {
+    return res.status(400).json({ message: "Missing user_id parameter" });
+  }
+
+  try {
+    // Step 1: Get follower IDs for the current user
+    const [rows] = await pool.query(
+      "SELECT follower_id FROM followers WHERE following_id = ?",
+      [user_id]
+    );
+
+    const followerIds = (rows as any[]).map(row => row.follower_id);
+
+    if (followerIds.length === 0) {
+      return res.status(200).json([]); // No followers
+    }
+
+    // Step 2: Get user data of all followers
+    const [users] = await pool.query(
+      "SELECT user_id, username, profile_picture, fullname FROM users WHERE user_id IN (?)",
+      [followerIds]
+    );
+
+    return res.status(200).json(users);
+  } catch (error) {
+    console.error("❌ Error getting followers:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const getFollowings = async (req: Request, res: Response) => {
+  const { user_id } = req.params;
+
+  if (!user_id) {
+    return res.status(400).json({ message: "Missing user_id parameter" });
+  }
+
+  try {
+    // Step 1: Get follower IDs for the current user
+    const [rows] = await pool.query(
+      "SELECT following_id FROM followers WHERE follower_id = ?",
+      [user_id]
+    );
+
+    const followingIds = (rows as any[]).map(row => row.following_id);
+
+    if (followingIds.length === 0) {
+      return res.status(200).json([]); // No followers
+    }
+
+    // Step 2: Get user data of all followers
+    const [users] = await pool.query(
+      "SELECT user_id, username, profile_picture, fullname FROM users WHERE user_id IN (?)",
+      [followingIds]
+    );
+
+    return res.status(200).json(users);
+  } catch (error) {
+    console.error("❌ Error getting followings:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};

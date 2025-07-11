@@ -13,6 +13,8 @@ import Tagged from './tagged';
 import { cropToSquareAndCompress } from '@/lib/croptosquareandcompress';
 import type { RootState } from '@/app/redux/store';
 import { Button } from '@/components/ui/button';
+import { FollowersDialog } from '@/components/self/followersdialog';
+import { FollowingDialog } from '@/components/self/followingdialog';
 
 const TABS = [
   { name: 'posts', icon: <Grid3X3 size={20} /> },
@@ -40,6 +42,7 @@ export default function Profile() {
   const username = pathname.split('/')[1];
   const activeTab = searchParams.get('tab') || 'posts';
   const isAuthor = useSelector((state: RootState) => state.auth.username) === username;
+  const author_id = useSelector((state: RootState) => state.auth.user_id);
 
   const [user, setUser] = useState<User | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -77,6 +80,30 @@ export default function Profile() {
     newParams.set('tab', tab);
     router.push(`/${username}?${newParams}`);
   };
+
+  const handleFollow = async () => {
+    if (!author_id) return;
+
+    console.log(author_id, user?.user_id);
+
+    try {
+      const res = await axios.post('http://localhost:8080/following/follow-user', {
+        user_id: author_id,
+        following_id: user?.user_id,
+      });
+
+      console.log(res.data);
+
+      setUser((prevUser) =>
+        prevUser ? { ...prevUser, followers: prevUser.followers + 1 } : prevUser
+      );
+
+      console.log("done");
+    } catch (err) {
+      console.error('Follow failed:', err);
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-black text-white flex">
@@ -132,7 +159,7 @@ export default function Profile() {
                   </>
                 ) : (
                   <>
-                    <Button className="rounded-lg cursor-pointer bg-blue-600 hover:bg-blue-500">Follow</Button>
+                    <Button className="rounded-lg cursor-pointer bg-blue-600 hover:bg-blue-500" onClick={handleFollow}>Follow</Button>
                     <Button className="btn-secondary rounded-lg cursor-pointer">Message</Button>
                     <MoreHorizontal size={22} className="hover:text-[#a8a8a8] cursor-pointer" strokeWidth={1.5} />
                   </>
@@ -141,8 +168,23 @@ export default function Profile() {
 
               <div className="flex gap-8">
                 <div><span className="font-medium">{user?.posts}</span> posts</div>
-                <div><span className="font-medium">{user?.followers}</span> followers</div>
-                <div><span className="font-medium">{user?.followings}</span> following</div>
+                <FollowersDialog
+                  user_id={user?.user_id || ""}
+                  trigger={
+                    <div className="cursor-pointer">
+                      <span className="font-medium">{user?.followers}</span> followers
+                    </div>
+                  }
+                />
+                <FollowingDialog
+                  user_id={user?.user_id || ""}
+                  trigger={
+                    <div className="cursor-pointer">
+                      <span className="font-medium">{user?.followings}</span> following
+                    </div>
+                  }
+                />
+
               </div>
 
               <div className="text-sm font-semibold">{user?.fullName}</div>
@@ -168,8 +210,8 @@ export default function Profile() {
                 <div
                   key={tab.name}
                   className={`flex items-center justify-center px-0 py-4 cursor-pointer ${activeTab === tab.name
-                      ? 'border-t border-white'
-                      : 'text-[#a8a8a8] hover:text-white transition-colors'
+                    ? 'border-t border-white'
+                    : 'text-[#a8a8a8] hover:text-white transition-colors'
                     } ${i !== TABS.length - 1 && 'mr-[60px]'}`}
                   onClick={() => changeTab(tab.name)}
                 >
