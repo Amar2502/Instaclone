@@ -29,9 +29,14 @@ export const setPost = async (
       folder: "posts",
     });
 
-    await pool.query(
+    const [content] = await pool.query(
       "INSERT INTO content (user_id, media, content_type, caption) VALUES (?, ?, ?, ?)",
       [user_id, result.secure_url, content_type, caption]
+    );
+
+    await pool.query(
+      "UPDATE users SET posts = posts + 1 WHERE user_id = ?",
+      [user_id]
     );
 
     return res.status(200).json({

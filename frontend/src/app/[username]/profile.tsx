@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { Grid3X3, Bookmark, Users, Camera, Plus, Settings, MoreHorizontal } from 'lucide-react';
 import axios from 'axios';
 
@@ -15,6 +15,7 @@ import type { RootState } from '@/app/redux/store';
 import { Button } from '@/components/ui/button';
 import { FollowersDialog } from '@/components/self/followersdialog';
 import { FollowingDialog } from '@/components/self/followingdialog';
+import { setProfilePic } from '@/app/redux/slices/authslice';
 
 const TABS = [
   { name: 'posts', icon: <Grid3X3 size={20} /> },
@@ -38,7 +39,7 @@ export default function Profile() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
-
+  const dispatch = useDispatch();
   const username = pathname.split('/')[1];
   const activeTab = searchParams.get('tab') || 'posts';
   const isAuthor = useSelector((state: RootState) => state.auth.username) === username;
@@ -65,12 +66,14 @@ export default function Profile() {
       formData.append('file', processed);
       formData.append('username', username);
 
-      await axios.post('http://localhost:8080/users/upload-profile-picture', formData, {
+      const res = await axios.post('http://localhost:8080/users/upload-profile-picture', formData, {
         withCredentials: true,
       });
+
+      dispatch(setProfilePic(res.data.url));  
     } catch (err) {
       console.error('Upload failed:', err);
-    } finally {
+    } finally { 
       setUploading(false);
     }
   };

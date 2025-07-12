@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import config from '../config/config';
+import { pool } from '../config/db';
 
 export const isauth = async (req: Request, res: Response) => {
   try {
@@ -11,14 +12,19 @@ export const isauth = async (req: Request, res: Response) => {
     }
 
     // 🔐 Verify token
-    const decoded = jwt.verify(token, config.JWT_SECRET) as { email: string, username: string, user_id: number, profile_picture: string };
+    const decoded = jwt.verify(token, config.JWT_SECRET) as { email: string, username: string, user_id: number };
 
     console.log(decoded);
 
     const username = decoded.username;
     const user_id = decoded.user_id;
-    const profile_picture = decoded.profile_picture;
 
+    const [rows]: any = await pool.query(
+      "SELECT profile_picture FROM users WHERE user_id = ?",
+      [user_id]
+    );
+
+    const profile_picture = rows[0]?.profile_picture;
 
     return res.status(200).json({ loggedIn: true, username, user_id, profile_picture });
   } catch (error) {

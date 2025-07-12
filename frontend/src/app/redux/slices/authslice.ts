@@ -41,8 +41,11 @@ const authSlice = createSlice({
     setIsLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
     },
+    setProfilePic: (state, action: PayloadAction<string>) => {
+      state.profile_pic = action.payload;
+    },
   },
 });
 
-export const { setUserInfo, logout, setIsLoading } = authSlice.actions;
+export const { setUserInfo, logout, setIsLoading, setProfilePic } = authSlice.actions;
 export default authSlice.reducer;

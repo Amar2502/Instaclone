@@ -71,7 +71,7 @@ export const registerUser = async (req: Request, res: Response) => {
 
     // ✅ Create JWT token
     const token = jwt.sign(
-      { user_id: newUser[0].user_id, username: newUser[0].username, email: newUser[0].email, profile_picture: newUser[0].profile_picture },
+      { user_id: newUser[0].user_id, username: newUser[0].username, email: newUser[0].email },
       config.JWT_SECRET,
       { expiresIn: "30d" }
     );
@@ -113,7 +113,7 @@ export const loginUser = async (req: Request, res: Response) => {
     }
 
     const token = jwt.sign(
-      { user_id: rows[0].user_id, username: rows[0].username, email: rows[0].email, profile_picture: rows[0].profile_picture},
+      { user_id: rows[0].user_id, username: rows[0].username, email: rows[0].email},
       config.JWT_SECRET,
       {expiresIn: "30d"}
     )
