@@ -112,7 +112,7 @@ export default function Profile() {
           {/* Profile Header */}
           <div className="flex gap-10 mb-11">
             {/* Profile Picture */}
-            <div className="relative w-[120px] h-[120px]">
+            <div className="relative w-[170px] h-[170px]">
               <div
                 onClick={isAuthor ? () => inputRef.current?.click() : undefined}
                 className={`w-full h-full rounded-full overflow-hidden relative ${isAuthor ? 'cursor-pointer group' : ''}`}

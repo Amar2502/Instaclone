@@ -91,28 +91,25 @@ const Posts = ({ user_id }: { user_id: number }) => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 px-4">
-            {post.map((post) => (
-              <div
-                key={post.content_id}
-                className="flex flex-col items-center justify-center"
-              >
-                {post.content_type === "post" && (
+        <div className="w-full max-w-4xl mx-auto p-4">
+          {/* Posts Grid */}
+          <div className="grid grid-cols-3 gap-1 md:gap-2">
+            {post.map((postItem) => (
+              postItem.content_type === "post" && (
+                <div
+                  key={postItem.content_id}
+                  className="aspect-auto bg-gray-100 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                >
                   <img
-                    src={post.media}
-                    alt={post.caption}
-                    className="max-w-[500px] w-full h-auto rounded-lg"
+                    src={postItem.media}
+                    alt=""
+                    className="w-full h-full object-cover"
                   />
-                )}
-                <div className="text-center mt-4">
-                  <p className="text-white text-sm">{post.caption}</p>
-                  <p className="text-gray-400 text-xs">
-                    {new Date(post.created_at).toLocaleString()}
-                  </p>
                 </div>
-              </div>
+              )
             ))}
           </div>
+        </div>
       )}
     </div>
   );
