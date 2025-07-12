@@ -14,7 +14,7 @@ const AuthInit = () => {
     axios.get('http://localhost:8080/users/isauth', { withCredentials: true })
       .then((res) => {
         if (res.data.loggedIn) {
-          dispatch(setUserInfo({ username: res.data.username, isLoggedIn: true, user_id: res.data.user_id }));
+          dispatch(setUserInfo({ username: res.data.username, isLoggedIn: true, user_id: res.data.user_id, profile_pic: res.data.profile_picture }));
           console.log('User info set');
         } else {
           console.log('User is not logged in');

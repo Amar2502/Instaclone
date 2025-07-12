@@ -6,6 +6,7 @@ interface AuthState {
   isLoggedIn: boolean;
   user_id: number | null;
   isLoading: boolean;
+  profile_pic: string | null;
 }
 
 const initialState: AuthState = {
@@ -13,6 +14,7 @@ const initialState: AuthState = {
   isLoggedIn: false,
   user_id: null,
   isLoading: true,
+  profile_pic: null,
 };
 
 const authSlice = createSlice({
@@ -21,18 +23,20 @@ const authSlice = createSlice({
   reducers: {
     setUserInfo: (
       state,
-      action: PayloadAction<{ username: string; isLoggedIn: boolean; user_id: number }>
+      action: PayloadAction<{ username: string; isLoggedIn: boolean; user_id: number; profile_pic: string }>
     ) => {
       state.username = action.payload.username;
       state.isLoggedIn = action.payload.isLoggedIn;
       state.user_id = action.payload.user_id;
       state.isLoading = false;
+      state.profile_pic = action.payload.profile_pic;
     },
     logout: (state) => {
       state.username = null;
       state.isLoggedIn = false;
       state.user_id = null;
       state.isLoading = false;
+      state.profile_pic = null;
     },
     setIsLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
