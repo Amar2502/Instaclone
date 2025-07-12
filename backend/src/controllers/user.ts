@@ -96,7 +96,7 @@ export const loginUser = async (req: Request, res: Response) => {
   console.log(req.body);
 
   try {
-    
+
     const [rows, fields] = await pool.query<User[]>(
       "SELECT * FROM users WHERE email = ?",
       [email]
@@ -104,9 +104,9 @@ export const loginUser = async (req: Request, res: Response) => {
 
     if(rows.length==0) {
       return res.status(400).json({ message: "User does not exist", problem: "identifier" });
-    } 
+    }
 
-    const isMatch = await comparePassword(password, rows[0].password)
+    const isMatch = password === rows[0].password;
 
     if(!isMatch) {
       return res.status(400).json({ message: "Password is not correct", problem: "password" });
@@ -125,7 +125,6 @@ export const loginUser = async (req: Request, res: Response) => {
     })
 
     res.status(201).json({ message: "User logined successfully", user: rows, token: token});
-    
 
   } catch (error) {
     return res.status(400).json({ message: "Internal Server Error" });

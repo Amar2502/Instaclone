@@ -1,36 +1,33 @@
-  // app/AuthInit.tsx
-  'use client';
+'use client';
 
-  import { useEffect } from 'react';
-  import axios from 'axios';
-  import { useDispatch } from 'react-redux';
-  import { setIsLoading, setUserInfo } from './redux/slices/authslice';
+import { useEffect } from 'react';
+import axios from 'axios';
+import { useDispatch } from 'react-redux';
+import { setIsLoading, setUserInfo } from './redux/slices/authslice';
 
-  const AuthInit = () => {
+const AuthInit = () => {
+  const dispatch = useDispatch();
 
-    console.log('AuthInit');
-    
-    const dispatch = useDispatch();
+  useEffect(() => {
+    dispatch(setIsLoading(true)); // Start loading
 
-    useEffect(() => {
-      axios.get('http://localhost:8080/users/isauth', { withCredentials: true })
-        .then((res) => {
-          if (res.data.loggedIn) {
-            console.log(res.data);
-            dispatch(setUserInfo({ username: res.data.username, isLoggedIn: true, user_id: res.data.user_id }));
-            console.log('User info set');
-          }
-          else {
-            console.log('User info not set');
-          }
-        })
-        .catch((err) => {
-          console.error('Auth check failed:', err);
-          console.log('User info not set');
-        });
-    }, []);
+    axios.get('http://localhost:8080/users/isauth', { withCredentials: true })
+      .then((res) => {
+        if (res.data.loggedIn) {
+          dispatch(setUserInfo({ username: res.data.username, isLoggedIn: true, user_id: res.data.user_id }));
+          console.log('User info set');
+        } else {
+          console.log('User is not logged in');
+        }
+        dispatch(setIsLoading(false)); // ✅ Always stop loading
+      })
+      .catch((err) => {
+        console.error('Auth check failed:', err);
+        dispatch(setIsLoading(false)); // ✅ Even on error, stop loading
+      });
+  }, [dispatch]);
 
-    return null; // no UI needed
-  };
+  return null;
+};
 
-  export default AuthInit;
+export default AuthInit;

@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { pool } from "../config/db";
 import config from "../config/config";
 import { v2 as cloudinary } from "cloudinary";
-import { RowDataPacket } from "mysql2";
 
 cloudinary.config({
   cloud_name: config.CLOUDINARY_CLOUD_NAME,

@@ -17,13 +17,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 
 interface Following {
-  user_id: string;
+  user_id: number;
   username: string;
   profile_picture: string;
   fullname: string;
 }
 
-export function FollowingDialog({ trigger, user_id }: { trigger: React.ReactNode, user_id: string }) {
+export function FollowingDialog({ trigger, user_id }: { trigger: React.ReactNode, user_id: number }) {
   const [following, setFollowing] = useState<Following[]>([]);
   const [loading, setLoading] = useState(true);
 

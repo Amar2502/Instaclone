@@ -23,7 +23,7 @@ const TABS = [
 ];
 
 interface User {
-  user_id: string;
+  user_id: number;
   username: string;
   profile_picture: string;
   fullName: string;
@@ -169,7 +169,7 @@ export default function Profile() {
               <div className="flex gap-8">
                 <div><span className="font-medium">{user?.posts}</span> posts</div>
                 <FollowersDialog
-                  user_id={user?.user_id || ""}
+                  user_id={user?.user_id || 0}
                   trigger={
                     <div className="cursor-pointer">
                       <span className="font-medium">{user?.followers}</span> followers
@@ -177,7 +177,7 @@ export default function Profile() {
                   }
                 />
                 <FollowingDialog
-                  user_id={user?.user_id || ""}
+                  user_id={user?.user_id || 0}
                   trigger={
                     <div className="cursor-pointer">
                       <span className="font-medium">{user?.followings}</span> following
@@ -224,9 +224,16 @@ export default function Profile() {
           </div>
 
           {/* Tab Content */}
-          {activeTab === 'posts' && <Posts />}
-          {isAuthor && activeTab === 'saved' && <Saved />}
-          {activeTab === 'tagged' && <Tagged />}
+          {!user?.user_id ? (
+            <div className="text-center text-white py-10">Loading profile...</div>
+          ) : (
+            <>
+              {activeTab === 'posts' && <Posts user_id={user.user_id} />}
+              {isAuthor && activeTab === 'saved' && <Saved />}
+              {activeTab === 'tagged' && <Tagged />}
+            </>
+          )}
+
         </div>
       </div>
     </div>

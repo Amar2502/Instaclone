@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
-import { RootState } from "@/app/redux/store";
 import axios from "axios";
 
 import {
@@ -17,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 
 interface Follower {
-  user_id: string;
+  user_id: number;
   username: string;
   profile_picture: string;
   fullname: string;
@@ -28,7 +26,7 @@ export function FollowersDialog({
   user_id,
 }: {
   trigger: React.ReactNode;
-  user_id: string | null;
+  user_id: number | null;
 }) {
   const [followers, setFollowers] = useState<Follower[]>([]);
   const [loading, setLoading] = useState(true);
