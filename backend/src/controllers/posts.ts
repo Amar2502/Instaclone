@@ -13,6 +13,7 @@ export const setPost = async (
   req: Request & { file: Express.Multer.File },
   res: Response
 ) => {
+
   const file = req.file;
   const { user_id, caption, content_type } = req.body;
 
@@ -30,8 +31,8 @@ export const setPost = async (
     });
 
     const [content] = await pool.query(
-      "INSERT INTO content (user_id, media, content_type, caption) VALUES (?, ?, ?, ?)",
-      [user_id, result.secure_url, content_type, caption]
+      "INSERT INTO content (user_id, media, media_public_id, content_type, caption) VALUES (?, ?, ?, ?, ?)",
+      [user_id, result.secure_url, result.public_id, content_type, caption]
     );
 
     await pool.query(

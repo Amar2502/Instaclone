@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import { UserData } from '../page';
 
@@ -25,8 +25,7 @@ export default function DOBForm({ onSuccess, data, setData }: DOBFormProps) {
     const [selectedDay, setSelectedDay] = useState('25');
     const [selectedYear, setSelectedYear] = useState('2005');
     const [error, setError] = useState<string | null>(null);
-
-    console.log(data);
+    const [loading, setLoading] = useState(false);
 
     const months = [
         'January', 'February', 'March', 'April', 'May', 'June',
@@ -52,11 +51,14 @@ export default function DOBForm({ onSuccess, data, setData }: DOBFormProps) {
         setData(prev => ({ ...prev, date_of_birth: dob }));
 
         try {
+            setLoading(true);
             await axios.post("http://localhost:8080/otp/send-otp", { email: data.email }, { withCredentials: true });
             onSuccess(); // proceed to next step (OTP)
         } catch (err) {
             console.error(err);
             setError("Failed to send OTP. Please try again.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -175,6 +177,7 @@ export default function DOBForm({ onSuccess, data, setData }: DOBFormProps) {
                     className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 rounded-full transition-colors mb-6 text-sm"
                     onClick={handleSubmit}>
                     Next
+                    {loading && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
                 </button>
                 {error && <p className="text-red-500 text-sm">{error}</p>}
 

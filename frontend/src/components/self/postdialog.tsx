@@ -98,8 +98,6 @@ export function CreatePostDialog({
           withCredentials: true,
         }
       );
-
-      console.log("Upload Success:", res.data);
       
       // Reset UI
       setStep("upload");
@@ -163,73 +161,98 @@ export function CreatePostDialog({
         </DialogContent>
       )}  
 
-      {step === "preview" && previewURL && (
-        <DialogContent className="sm:max-w-[750px] h-[650px] p-0 overflow-hidden text-white rounded-xl border border-zinc-700">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-700 bg-zinc-900">
-            <button
-              onClick={handleBack}
-              className="text-white hover:text-zinc-300 transition-colors"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <DialogTitle className="text-white text-lg font-medium">
-              Create new post
-            </DialogTitle>
-            <button
-              onClick={handleSharePost}
+{step === "preview" && previewURL && (
+  <DialogContent className="sm:max-w-[750px] h-[650px] p-0 overflow-hidden text-white rounded-xl border border-zinc-700">
+    {/* Header */}
+    <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-700 bg-zinc-900">
+      <button
+        onClick={handleBack}
+        disabled={isUploading}
+        className="text-white disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ArrowLeft size={20} />
+      </button>
+      <DialogTitle className="text-white text-lg font-medium">
+        Create new post
+      </DialogTitle>
+      <button
+        onClick={handleSharePost}
+        disabled={isUploading || !croppedFile}
+        className="text-blue-500 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+      >
+        {isUploading ? (
+          <span className="flex items-center gap-2">
+            <Loader2 className="animate-spin" size={16} />
+            Sharing...
+          </span>
+        ) : (
+          "Share"
+        )}
+      </button>
+    </div>
+
+    <div className="flex h-full">
+      {/* Image Preview */}
+      <div className="flex-1 bg-black flex items-center justify-center relative h-full">
+        <img
+          src={previewURL}
+          alt="Preview"
+          className="w-full h-full object-contain"
+        />
+
+        {isUploading && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-2 text-white">
+              <Loader2 size={36} className="animate-spin text-blue-500" />
+              <p className="text-sm">Uploading post...</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Right Panel */}
+      <div className="w-85 bg-zinc-900 flex flex-col">
+        {/* User Info */}
+        <div className="p-4 border-b border-zinc-700 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full overflow-hidden">
+            <img 
+              src={profile_pic || ""} 
+              alt="Profile" 
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <span className="text-sm font-medium">{username}</span>
+        </div>
+
+        {/* Caption */}
+        <div className="flex-1 p-4">
+          <textarea
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            placeholder="Write a caption..."
+            disabled={isUploading}
+            className="w-full bg-transparent text-white placeholder-zinc-500 text-sm resize-none outline-none border-none min-h-[120px] disabled:opacity-50"
+            maxLength={2200}
+          />
+          <div className="flex items-center justify-between mt-2">
+            <button 
               disabled={isUploading}
-              className="text-blue-500 hover:text-blue-400 font-medium text-sm transition-colors disabled:opacity-50 cursor-pointer"
+              className="disabled:opacity-50"
             >
-              {isUploading ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="animate-spin" size={16} />
-                  Sharing...
-                </span>
-              ) : (
-                "Share"
-              )}
+              <Smile size={16} className="text-zinc-500" />
             </button>
+            <span className={`text-xs ${
+              caption.length > 2000 ? 'text-red-400' : 'text-zinc-500'
+            }`}>
+              {caption.length}/2,200
+            </span>
           </div>
+        </div>
+      </div>
+    </div>
+  </DialogContent>
+)}
 
-          <div className="flex h-full">
-            {/* Image Preview */}
-            <div className="flex-1 bg-black flex items-center justify-center relative h-full">
-              <img
-                src={previewURL}
-                alt="Preview"
-                className="w-full h-full object-contain"
-              />
-            </div>
-
-            {/* Right Panel */}
-            <div className="w-85 bg-zinc-900 flex flex-col">
-              {/* User Info */}
-              <div className="p-4 border-b border-zinc-700 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center">
-                  <img src={profile_pic || ""} alt="Profile" className="w-full h-full object-cover rounded-full" />
-                </div>
-                <span className="text-white text-sm font-medium">{username}</span>
-              </div>
-
-              {/* Caption */}
-              <div className="flex-1 p-4">
-                <textarea
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  placeholder="Write a caption..."
-                  className="w-full bg-transparent text-white placeholder-zinc-500 text-sm resize-none outline-none border-none min-h-[120px]"
-                  maxLength={2200}
-                />
-                <div className="flex items-center justify-between mt-2">
-                  <Smile size={16} className="text-zinc-500" />
-                  <span className="text-zinc-500 text-xs">{caption.length}/2,200</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      )}
     </Dialog>
   );
 }

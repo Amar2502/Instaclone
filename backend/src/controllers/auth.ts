@@ -14,8 +14,6 @@ export const isauth = async (req: Request, res: Response) => {
     // 🔐 Verify token
     const decoded = jwt.verify(token, config.JWT_SECRET) as { email: string, username: string, user_id: number };
 
-    console.log(decoded);
-
     const username = decoded.username;
     const user_id = decoded.user_id;
 

@@ -1,5 +1,4 @@
-import LoadingHomepage from "@/components/self/loadinghomepage";
-import { useSelector } from "react-redux";
+
 
 export default function Homepage() {
 

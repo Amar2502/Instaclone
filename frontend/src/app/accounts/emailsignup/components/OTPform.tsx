@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { UserData } from '../page';
+import { setUserInfo } from '@/app/redux/slices/authslice';
+import { useDispatch } from 'react-redux';
 
 interface User {
     username: string;
@@ -20,6 +22,7 @@ interface OTPFormProps {
 
 
 export default function OTPForm({onSuccess, data}: OTPFormProps) {
+  const dispatch = useDispatch();
   const [otp, setOTP] = useState("");
   const [resendmessage, setResendmessage] = useState<string | null>(null);
 
@@ -33,16 +36,12 @@ export default function OTPForm({onSuccess, data}: OTPFormProps) {
     date_of_birth: data.date_of_birth
   }
 
-  console.log(register);
-  
-
   const handleVerification = () => {
     axios.post("http://localhost:8080/otp/verify-otp", { email: data.email, otp }, { withCredentials: true })
       .then((res) => {
-        console.log(res.data);
         axios.post("http://localhost:8080/users/register", register, { withCredentials: true })
       .then((res) => {
-        console.log("Response:", res.data);
+        dispatch(setUserInfo({ username: res.data.user.username, isLoggedIn: true, user_id: res.data.user.user_id, profile_pic: res.data.user.profile_picture }));
         onSuccess();
       })
       .catch((err) => {
@@ -58,7 +57,6 @@ export default function OTPForm({onSuccess, data}: OTPFormProps) {
   const handleResend = () => {
     axios.post("http://localhost:8080/otp/send-otp", { email: data.email }, { withCredentials: true })
       .then((res) => {
-        console.log(res.data);
         setResendmessage("OTP sent successfully");
       })
       .catch((err) => {

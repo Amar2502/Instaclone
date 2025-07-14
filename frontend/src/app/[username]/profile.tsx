@@ -32,6 +32,7 @@ interface User {
   followers: number;
   followings: number;
   posts: number;
+  isFollowing: boolean;
 }
 
 export default function Profile() {
@@ -42,7 +43,8 @@ export default function Profile() {
   const dispatch = useDispatch();
   const username = pathname.split('/')[1];
   const activeTab = searchParams.get('tab') || 'posts';
-  const isAuthor = useSelector((state: RootState) => state.auth.username) === username;
+  const author = useSelector((state: RootState) => state.auth.username);
+  const isAuthor = author === username;
   const author_id = useSelector((state: RootState) => state.auth.user_id);
 
   const [user, setUser] = useState<User | null>(null);
@@ -50,7 +52,11 @@ export default function Profile() {
   const [preview, setPreview] = useState<string | null>(null);
 
   useEffect(() => {
-    axios.get(`http://localhost:8080/users/${username}`)
+    axios.get(`http://localhost:8080/users/${username}`, {
+      params: {
+        author_id: author_id
+      }
+    })
       .then(res => setUser(res.data.user))
       .catch(err => console.error(err));
   }, [username]);
@@ -87,21 +93,14 @@ export default function Profile() {
   const handleFollow = async () => {
     if (!author_id) return;
 
-    console.log(author_id, user?.user_id);
-
     try {
       const res = await axios.post('http://localhost:8080/following/follow-user', {
         user_id: author_id,
         following_id: user?.user_id,
       });
 
-      console.log(res.data);
+      setUser((prevUser) => prevUser ? { ...prevUser, followers: prevUser.followers + 1, isFollowing: true } : prevUser);
 
-      setUser((prevUser) =>
-        prevUser ? { ...prevUser, followers: prevUser.followers + 1 } : prevUser
-      );
-
-      console.log("done");
     } catch (err) {
       console.error('Follow failed:', err);
     }
@@ -162,7 +161,7 @@ export default function Profile() {
                   </>
                 ) : (
                   <>
-                    <Button className="rounded-lg cursor-pointer bg-blue-600 hover:bg-blue-500" onClick={handleFollow}>Follow</Button>
+                    <Button className="rounded-lg cursor-pointer bg-blue-600 hover:bg-blue-500" onClick={handleFollow}>{user?.isFollowing ? "Following" : "Follow"}</Button>
                     <Button className="btn-secondary rounded-lg cursor-pointer">Message</Button>
                     <MoreHorizontal size={22} className="hover:text-[#a8a8a8] cursor-pointer" strokeWidth={1.5} />
                   </>
@@ -231,9 +230,9 @@ export default function Profile() {
             <div className="text-center text-white py-10">Loading profile...</div>
           ) : (
             <>
-              {activeTab === 'posts' && <Posts user_id={user.user_id} />}
+              {activeTab === 'posts' && <Posts user_id={user.user_id} username={user.username}/>}
               {isAuthor && activeTab === 'saved' && <Saved />}
-              {activeTab === 'tagged' && <Tagged />}
+              {activeTab === 'tagged' && <Tagged username={user.username}/>}
             </>
           )}
 

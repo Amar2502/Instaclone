@@ -53,12 +53,10 @@ export default function RegistrationForm({ data, setData, onSuccess }: RegisterP
     };
 
     const handleSubmit = (e: React.FormEvent) => {
-        console.log("handleSubmit");
         e.preventDefault();
         setFormErrors({}); // reset
 
         const result = registerSchema.safeParse(data);
-        console.log(result);
 
         if (!result.success) {
             const fieldErrors: Partial<Record<keyof UserData, string>> = {};
@@ -69,12 +67,7 @@ export default function RegistrationForm({ data, setData, onSuccess }: RegisterP
             setFormErrors(fieldErrors);
             return; // don't submit if validation fails
         }
-
-        console.log(data);
-
         try {
-            console.log("try");
-            
             onSuccess();
         } catch (err) {
             console.error("Submission error:", err);

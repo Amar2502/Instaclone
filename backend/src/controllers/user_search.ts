@@ -11,13 +11,9 @@ interface User {
 export const searchUserbyLetters = async (req: Request, res: Response) => {
   const { query } = req.params;
 
-  console.log(query);
-
   if (!query || query.length < 2) {
     return res.status(400).json({ message: "Query is required" });
   }
-
-  console.log("query is not null and length is greater than 2");
 
   try {
     const [results] = await pool.query(
@@ -42,8 +38,6 @@ export const searchUserbyLetters = async (req: Request, res: Response) => {
         `%${query}%`,  // WHERE clause match
       ]
     );
-
-    console.log(results);
 
     if ((results as User[]).length === 0) {
       return res.status(404).json({ message: "No accounts found" });

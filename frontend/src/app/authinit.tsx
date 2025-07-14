@@ -9,21 +9,17 @@ const AuthInit = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    dispatch(setIsLoading(true)); // Start loading
+    dispatch(setIsLoading(true));
 
     axios.get('http://localhost:8080/users/isauth', { withCredentials: true })
       .then((res) => {
         if (res.data.loggedIn) {
           dispatch(setUserInfo({ username: res.data.username, isLoggedIn: true, user_id: res.data.user_id, profile_pic: res.data.profile_picture }));
-          console.log('User info set');
-        } else {
-          console.log('User is not logged in');
         }
-        dispatch(setIsLoading(false)); // ✅ Always stop loading
+        dispatch(setIsLoading(false));
       })
       .catch((err) => {
-        console.error('Auth check failed:', err);
-        dispatch(setIsLoading(false)); // ✅ Even on error, stop loading
+        dispatch(setIsLoading(false));
       });
   }, [dispatch]);
 

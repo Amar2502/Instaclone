@@ -5,16 +5,12 @@ import { randomInt } from 'crypto';
 import config from '../config/config';
 
 export const sendOTP = async (req: Request, res: Response) => {
-  const { email } = req.body; // email or phone
-
-  console.log(email);
+  const { email } = req.body;
 
   const otp = randomInt(100000, 999999).toString();
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
   console.log(otp);
-  console.log(expiresAt);
-  console.log(config.APP_PASSWORD);
 
   try {
     await pool.query(
@@ -47,14 +43,12 @@ export const sendOTP = async (req: Request, res: Response) => {
 
 export const verifyOTP = async (req: Request, res: Response) => {
   const { email, otp } = req.body;
-  console.log(email, otp);
+
   try {
     const [rows] = await pool.query(
       'SELECT * FROM otps WHERE email = ? AND otp = ? ORDER BY created_at DESC LIMIT 1',
       [email, otp]
     );
-
-    console.log(rows);
 
     const record = (rows as any[])[0];
 

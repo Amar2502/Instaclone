@@ -57,15 +57,13 @@ export default function Onboarding() {
   };
 
   const handleNext = () => {
-    console.log("Selected accounts:", selectedAccounts);
-    axios.post("http://localhost:8080/following/follow-user", {
+    axios.post("http://localhost:8080/following/follow-multiple-users", {
       user_id: user_id,
       following_ids: selectedAccounts.map((acc) => acc.user_id),
     }, {
       withCredentials: true,
     })
     .then((res) => {
-      console.log(res.data);
       router.push("/");
     })
     .catch((err) => {

@@ -3,6 +3,8 @@
 import axios from "axios";
 import { Camera } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "../redux/store";
 
 interface Post {
   content_id: number;
@@ -14,8 +16,12 @@ interface Post {
   comments: number;
 }
 
-const Posts = ({ user_id }: { user_id: number }) => {
+const Posts = ({ user_id, username }: { user_id: number, username: string }) => {
   const [post, setPost] = useState<Post[] | null>(null);
+
+  const author = useSelector((state: RootState) => state.auth.username);
+
+  const isSafe = author === username;
 
   useEffect(() => {
     if (!user_id) return; // ⛔ Don't fetch if user_id is invalid
@@ -53,7 +59,6 @@ const Posts = ({ user_id }: { user_id: number }) => {
             withCredentials: true,
           }
         );
-        console.log("Upload Success:", res.data);
 
         // Re-fetch posts
         const refreshed = await axios.get(`http://localhost:8080/posts/get-posts/${user_id}`);
@@ -68,8 +73,6 @@ const Posts = ({ user_id }: { user_id: number }) => {
 
   if (!user_id) return null; // ⛔ Don't render anything until user_id is valid
 
-  console.log("post from posts.tsx", post);
-
   return (
     <div className="pt-[35px] pb-8">
       {post?.length === 0 || post === null ? (
@@ -78,23 +81,29 @@ const Posts = ({ user_id }: { user_id: number }) => {
             <div className="w-[62px] h-[62px] border border-[#262626] rounded-full flex items-center justify-center mx-auto mb-4">
               <Camera size={24} />
             </div>
-            <h3 className="text-[17px] font-semibold mb-4 text-white">Share Photos</h3>
+            <h3 className="text-[17px] font-semibold mb-4 text-white">
+              {isSafe ? "Share Photos" : "No Posts Yet"}
+            </h3>
             <p className="text-[14px] text-[#a8a8a8] mb-6 leading-[18px]">
-              When you share photos, they will appear on your profile.
+              {isSafe
+                ? "When you share photos, they will appear on your profile."
+                : "This user hasn’t posted any photos yet."}
             </p>
-            <button
-              className="btn-primary cursor-pointer text-indigo-600"
-              onClick={handleUploadPost}
-            >
-              Share your first photo
-            </button>
+            {isSafe && (
+              <button
+                className="btn-primary cursor-pointer text-indigo-600"
+                onClick={handleUploadPost}
+              >
+                Share your first photo
+              </button>
+            )}
           </div>
         </div>
       ) : (
         <div className="w-full max-w-4xl mx-auto p-4">
           {/* Posts Grid */}
           <div className="grid grid-cols-3 gap-1 md:gap-2">
-            {post.map((postItem) => (
+            {post.map((postItem) =>
               postItem.content_type === "post" && (
                 <div
                   key={postItem.content_id}
@@ -107,10 +116,11 @@ const Posts = ({ user_id }: { user_id: number }) => {
                   />
                 </div>
               )
-            ))}
+            )}
           </div>
         </div>
       )}
+
     </div>
   );
 };

@@ -8,6 +8,8 @@ import {z} from "zod";
 import FloatingInput from "@/components/self/floatingInput";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { setUserInfo } from "./redux/slices/authslice";
+import { useDispatch } from "react-redux";
 
 interface login {
   email: string;
@@ -35,7 +37,7 @@ const loginSchema = z.object({
 
 export default function login() {
   const [show, setShow] = useState(false);
-
+  const dispatch = useDispatch();
   const [error, setError] = useState<Error | null>(null);
 
   const [login, setLogin] = useState<login>({
@@ -66,21 +68,18 @@ export default function login() {
       return; // don't submit if validation fails
     }
   
-    console.log("Form submitted:", login);
-
     axios.post("http://localhost:8080/users/login", login, {withCredentials: true,}) 
     .then((res) => {
-      console.log("Response:", res.data);
         setError(null);
-        router.replace("/");
+        dispatch(setUserInfo({ username: res.data.user.username, isLoggedIn: true, user_id: res.data.user.user_id, profile_pic: res.data.user.profile_picture }));
+        router.refresh();
     })
     .catch((err) => {
-      console.log("Error:", err.response.data.message);
+      console.log(err);
       setError({
         message: err.response.data.message,
         problem: err.response.data.problem,
       });
-      console.error("Error:", err);
     });
   };
   

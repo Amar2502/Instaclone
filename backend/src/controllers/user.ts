@@ -56,11 +56,11 @@ export const registerUser = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Username already exists", problem: "username" });
     }
 
-    const hashedPassword = await hashPassword(password);
+    // const hashedPassword = await hashPassword(password);
 
     const [insertResult]: any = await pool.query(
       "INSERT INTO users (email, password, fullName, username, date_of_birth) VALUES (?, ?, ?, ?, ?)",
-      [email, hashedPassword, fullName, username, date_of_birth]
+      [email, password, fullName, username, date_of_birth]
     );
 
     // ✅ Fetch the newly inserted user
@@ -93,7 +93,6 @@ export const registerUser = async (req: Request, res: Response) => {
 
 export const loginUser = async (req: Request, res: Response) => {
   const {email, password} = req.body as LoginUserRequest;
-  console.log(req.body);
 
   try {
 
@@ -124,7 +123,7 @@ export const loginUser = async (req: Request, res: Response) => {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in ms
     })
 
-    res.status(201).json({ message: "User logined successfully", user: rows, token: token});
+    res.status(201).json({ message: "User logined successfully", user: rows[0], token: token});
 
   } catch (error) {
     return res.status(400).json({ message: "Internal Server Error" });
@@ -133,8 +132,7 @@ export const loginUser = async (req: Request, res: Response) => {
 
 export const getUserByUsername = async (req: Request, res: Response) => {
   const { username } = req.params;
-
-  console.log(username);
+  const { author_id } = req.query;
 
   try {
     const [rows]: any = await pool.query(
@@ -142,10 +140,18 @@ export const getUserByUsername = async (req: Request, res: Response) => {
       [username]
     );
 
-    console.log(rows);
-
     if (!rows || rows.length === 0) {
       return res.status(404).json({ message: 'User not found' });
+    }
+
+    let isFollowing = [];
+
+    if (author_id) {
+      const [followRows]: any = await pool.query(
+        'SELECT * FROM followers WHERE follower_id = ? AND following_id = ?',
+        [author_id, rows[0].user_id]
+      );
+      isFollowing = followRows;
     }
 
     const publicUser = {
@@ -157,9 +163,8 @@ export const getUserByUsername = async (req: Request, res: Response) => {
       followers: rows[0].followers,
       followings: rows[0].followings,
       posts: rows[0].posts,
-    };   
-    
-    console.log("publicUser", publicUser);
+      isFollowing: isFollowing.length > 0,
+    };
 
     return res.status(200).json({ user: publicUser });
   } catch (error) {
@@ -167,6 +172,7 @@ export const getUserByUsername = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Internal Server Error' });
   }
 };
+
 
 export const getSomeAccounts = async (req: Request, res: Response) => {
   const { username } = req.params;

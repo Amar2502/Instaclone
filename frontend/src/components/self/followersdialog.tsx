@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import axios from "axios";
 
 import {
@@ -29,9 +29,8 @@ export function FollowersDialog({
   user_id: number | null;
 }) {
   const [followers, setFollowers] = useState<Follower[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
     const fetchFollowers = async () => {
       try {
         const res = await axios.get(
@@ -45,11 +44,15 @@ export function FollowersDialog({
       }
     };
 
-    if (user_id) fetchFollowers();
-  }, [user_id]);
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (isOpen && followers.length === 0) {
+      fetchFollowers();
+    }
+  };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
 
       <DialogContent

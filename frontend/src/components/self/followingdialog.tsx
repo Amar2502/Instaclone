@@ -1,20 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
-import { RootState } from "@/app/redux/store";
-import axios from "axios";
-
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
+import axios from "axios";
 
 interface Following {
   user_id: number;
@@ -25,28 +16,30 @@ interface Following {
 
 export function FollowingDialog({ trigger, user_id }: { trigger: React.ReactNode, user_id: number }) {
   const [following, setFollowing] = useState<Following[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start as false
+  const [open, setOpen] = useState(false);       // Track open state
 
-  useEffect(() => {
-    const fetchFollowing = async () => {
-      console.log("user_id of diana", user_id);
-      try {
-        const res = await axios.get(
-          `http://localhost:8080/following/get-followings/${user_id}`
-        );
-        setFollowing(res.data);
-      } catch (err) {
-        console.error("Failed to load followings:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchFollowing = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`http://localhost:8080/following/get-followings/${user_id}`);
+      setFollowing(res.data);
+    } catch (err) {
+      console.error("Failed to load followings:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    if (user_id) fetchFollowing();
-  }, [user_id]);
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (isOpen && following.length === 0) {
+      fetchFollowing();
+    }
+  };
 
   return (
-    <Dialog>
+    <Dialog onOpenChange={handleOpenChange} open={open}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
 
       <DialogContent className="sm:max-w-[425px] bg-black text-white border border-zinc-800 shadow-lg rounded-xl">
@@ -69,11 +62,7 @@ export function FollowingDialog({ trigger, user_id }: { trigger: React.ReactNode
             </div>
           ) : following.length > 0 ? (
             following.map((acc) => (
-              <Link
-                key={acc.user_id}
-                href={`/${acc.username}`}
-                className="block"
-              >
+              <Link key={acc.user_id} href={`/${acc.username}`} className="block">
                 <div className="flex items-center gap-3 py-3 border-b border-zinc-800 hover:bg-zinc-800 px-2 rounded-md transition-colors">
                   <Avatar className="w-10 h-10">
                     <AvatarImage
@@ -93,9 +82,7 @@ export function FollowingDialog({ trigger, user_id }: { trigger: React.ReactNode
               </Link>
             ))
           ) : (
-            <div className="text-center text-zinc-500 py-12">
-              No followings found.
-            </div>
+            <div className="text-center text-zinc-500 py-12">No followings found.</div>
           )}
         </div>
       </DialogContent>
