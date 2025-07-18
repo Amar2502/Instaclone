@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import axios from 'axios';
 import { useDispatch } from 'react-redux';
 import { setIsLoading, setUserInfo } from './redux/slices/authslice';
+import { connectSocket } from '../lib/socket'; // 🔁 import your socket connector
 
 const AuthInit = () => {
   const dispatch = useDispatch();
@@ -14,7 +15,16 @@ const AuthInit = () => {
     axios.get('http://localhost:8080/users/isauth', { withCredentials: true })
       .then((res) => {
         if (res.data.loggedIn) {
-          dispatch(setUserInfo({ username: res.data.username, isLoggedIn: true, user_id: res.data.user_id, profile_pic: res.data.profile_picture }));
+          const { username, user_id, profile_picture } = res.data;
+
+          dispatch(setUserInfo({
+            username,
+            isLoggedIn: true,
+            user_id,
+            profile_pic: profile_picture
+          }));
+
+          connectSocket(user_id); // 🔌 connect socket here after login
         }
         dispatch(setIsLoading(false));
       })

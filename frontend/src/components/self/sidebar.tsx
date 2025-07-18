@@ -34,7 +34,7 @@ export default function Sidebar() {
   };
 
   // Tabs that should collapse the sidebar
-  const collapsibleTabs = ["search", "notifications"];
+  const collapsibleTabs = ["search", "notifications", "messages"];
   const isCollapsed = collapsibleTabs.includes(activeTab?.toLowerCase());
 
   return (
