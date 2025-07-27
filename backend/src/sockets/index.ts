@@ -1,11 +1,9 @@
 import { Server, Socket } from "socket.io";
 import { registerUserSocketHandlers } from "./userSocket"
-const onlineUsers = new Map<string, string>();
+const onlineUsers = new Map<number, string>();
 
 export const setupSocketIO = (io: Server) => {
   io.on("connection", (socket: Socket) => {
-    console.log(`🔌 New socket connected: ${socket.id}`);
-
     // Register all user-related events
     registerUserSocketHandlers(io, socket, onlineUsers);
 
@@ -21,3 +19,4 @@ export const setupSocketIO = (io: Server) => {
     });
   });
 };
+

@@ -2,184 +2,237 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useSelector } from "react-redux";
-import type { RootState } from '@/app/redux/store';
-import { ChevronLeft } from "lucide-react";
+import type { RootState } from "@/app/redux/store";
+import { ChevronLeft, ChevronRight, Info, Phone, Smile, Video } from "lucide-react";
 import Link from "next/link";
+import { getSocket } from "@/lib/socket";
 
 interface Users {
-    user_id: number;
-    username: string;
-    profile_picture: string;
-    fullname: string;
+  user_id: number;
+  username: string;
+  profile_picture: string;
+  fullname: string;
 }
 
 interface ChatProps {
-    user_id: string;
+  user_id: number;
 }
 
 export default function Chat({ user_id }: ChatProps) {
+  const [users, setUsers] = useState<Users[]>([]);
+  const [searchBar, setSearchBar] = useState(false);
+  const [user, setUser] = useState<Users | null>(null);
+  const [messages, setMessages] = useState<{ from: number; text: string }[]>([]);
+  const [message, setMessage] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    const [users, setUsers] = useState<Users[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [searchBar, setSearchBar] = useState(false);
-    const author_id = useSelector((state: RootState) => state.auth.user_id);
-    const username = useSelector((state: RootState) => state.auth.username);
-    const [user, setUser] = useState<Users | null>(null);
+  const author_id = useSelector((state: RootState) => state.auth.user_id) || 0;
+  const username = useSelector((state: RootState) => state.auth.username);
 
-    console.log(user_id);
+  const fetchConnectedUsers = async () => {
+    try {
+      const res = await axios.get(`http://localhost:8080/users/connected-to-users/${author_id}`);
+      setUsers(res.data);
+    } catch (err) {
+      console.error("Failed to load followers:", err);
+    }
+  };
 
-    const fetchConnectedUsers = async () => {
-        try {
-            const res = await axios.get(
-                `http://localhost:8080/users/connected-to-users/${author_id}`
-            );
-            setUsers(res.data);
-        } catch (err) {
-            console.error("Failed to load followers:", err);
-        } finally {
-            setLoading(false);
-        }
+  const fetchUserById = async () => {
+    try {
+      const res = await axios.get(`http://localhost:8080/users/get-user-by-id/${user_id}`);
+      setUser(res.data);
+    } catch (err) {
+      console.error("Failed to load user:", err);
+    }
+  };
+
+  const searchbarclicked = () => {
+    setSearchBar(true);
+    if (users.length === 0) {
+      fetchConnectedUsers();
+    }
+  };
+
+  useEffect(() => {
+    fetchUserById();
+  }, [user_id]);
+
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+
+    const handleReceiveMessage = (senderId: number, text: string) => {
+      setMessages((prev) => [...prev, { from: senderId, text }]);
     };
 
-    const fetchUserById = async () => {
-        try {
-            const res = await axios.get(
-                `http://localhost:8080/users/get-user-by-id/${user_id}`
-            );
-            setUser(res.data);
-        } catch (err) {
-            console.error("Failed to load followers:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
+    socket.on("receive-message", handleReceiveMessage);
 
-    const searchbarclicked = () => {
-        setSearchBar(true);
-        if (users.length > 0) {
-            return;
-        }
-        setLoading(true);
-        fetchConnectedUsers();
+    return () => {
+      socket.off("receive-message", handleReceiveMessage);
+    };
+  }, []);
+
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+
+    socket.on("is-typing", () => setIsTyping(true));
+    socket.on("stop-typing", () => setIsTyping(false));
+
+    return () => {
+      socket.off("is-typing");
+      socket.off("stop-typing");
+    };
+  }, []);
+
+  const sendMessage = () => {
+    const socket = getSocket();
+    if (!socket || !message.trim()) return;
+
+    socket.emit("send-message", author_id, user_id, message);
+    setMessages((prev) => [...prev, { from: author_id, text: message }]);
+    setMessage("");
+    setIsTyping(false);
+    socket.emit("stop-typing", user_id, author_id);
+  };
+
+  const handleTyping = () => {
+    const socket = getSocket();
+    if (!socket) return;
+
+    socket.emit("is-typing", user_id, author_id);
+
+    if (message.trim() === "") {
+      socket.emit("stop-typing", user_id, author_id);
+      setIsTyping(false);
+      return;
     }
 
-    console.log(user);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 
-    useEffect(() => {
-        fetchUserById();
-    }, []);
+    typingTimeoutRef.current = setTimeout(() => {
+      socket.emit("stop-typing", user_id, author_id);
+      setIsTyping(false);
+    }, 2000);
+  };
 
-    return (
-        <div className="flex h-screen bg-black text-white">
-            {/* Sidebar */}
-            <div className="w-[300px] border-r border-zinc-800 flex flex-col">
-                <div className="p-4 flex items-center justify-between">
-                    <span className="text-lg font-bold">{username}</span>
-                    <Button variant="ghost" size="icon">
-                        <svg
-                            stroke="currentColor"
-                            fill="none"
-                            strokeWidth="2"
-                            viewBox="0 0 24 24"
-                            className="h-5 w-5"
-                            xmlns="http://www.w3.org/2000/svg"
-                        >
-                            <path d="M12 20h9" />
-                            <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5Z" />
-                        </svg>
-                    </Button>
-                </div>
-
-                <div className="px-2 pb-2"> 
-                    {searchBar ? (
-                        <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="icon" className="cursor-pointer" onClick={() => setSearchBar(false)}><ChevronLeft /></Button>
-                            <Input placeholder="Search" className="bg-zinc-900 text-white" onClick={searchbarclicked} />
-                        </div>
-                    ) : (
-                        <Input placeholder="Search" className="bg-zinc-900 text-white" onClick={searchbarclicked} />
-                    )}
-                    {users.length > 0 && searchBar && (
-
-                        <div className="mt-2 space-y-2 overflow-y-auto">
-                            {users.map((user) => (
-                                <Link href={`/direct/t/${user.user_id}`} className="w-full flex items-center gap-3" key={user.user_id}>
-                                    <div key={user.user_id} className="w-full flex items-center gap-3 p- hover:bg-zinc-700 cursor-pointer">
-                                        <img
-                                            src={user.profile_picture}
-                                            alt={user.username}
-                                            className="w-12 h-12 rounded-full"
-                                        />
-                                        <div>
-                                            <div className="text-sm font-medium">{user.fullname}</div>
-                                            <div className="text-xs text-muted-foreground">@{user.username}</div>
-                                        </div>
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
-
-                    )}
-                </div>
-
-                <div className="px-4 text-xs text-muted-foreground mt-4">Messages</div>
-                <div className="px-4 text-xs text-blue-500">No messages found.</div>
-            </div>
-
-            {/* Message Area */}
-            <div className="flex-1 flex flex-col items-center justify-center text-white relative">
-                {/* Center Profile Section */}
-                <div className="flex flex-col items-center space-y-2 absolute top-1/4">
-                    <img
-                        src={user?.profile_picture}
-                        alt="Profile"
-                        className="w-24 h-24 rounded-full object-cover"
-                    />
-                    <div className="text-xl font-semibold">{user?.fullname}</div>
-                    <div className="text-sm text-gray-400">{user?.username} · Instagram</div>
-                    <Link href={`/${user?.username}`} className="bg-[#353535] px-4 py-1 rounded-md mt-2 hover:bg-[#444]">
-                        View profile
-                    </Link>
-                </div>
-
-                {/* Timestamp */}
-                <div className="absolute bottom-24 text-xs text-gray-500">9:10 PM</div>
-
-                {/* Messages */}
-                <div className="absolute bottom-36 w-full px-6 space-y-2">
-                    {/* Left-aligned messages */}
-                    <div className="flex items-start space-x-2">
-                        <img
-                            src={user?.profile_picture}
-                            className="w-6 h-6 rounded-full object-cover"
-                            alt="User"
-                        />
-                        <div className="space-y-1">
-                            <div className="bg-[#3a3a3a] px-3 py-1 rounded-full text-sm">Hi</div>
-                            <div className="bg-[#3a3a3a] px-3 py-1 rounded-full text-sm">Ho</div>
-                        </div>
-                    </div>
-
-                    {/* Right-aligned message */}
-                    <div className="flex justify-end">
-                        <div className="bg-blue-600 px-3 py-1 rounded-full text-sm">hello</div>
-                    </div>
-                </div>
-
-                {/* Message input */}
-                <div className="absolute bottom-0 w-full border-t border-gray-700 px-6 py-4 flex items-center space-x-2 bg-black">
-                    <input
-                        type="text"
-                        placeholder="Message..."
-                        className="flex-1 bg-transparent text-white outline-none"
-                    />
-                    <button className="text-white text-lg">😊</button>
-                </div>
-            </div>
-
+  return (
+    <div className="flex h-screen bg-black text-white">
+      {/* Sidebar */}
+      <div className="w-[300px] border-r border-zinc-800 flex flex-col">
+        <div className="p-4 flex items-center justify-between">
+          <span className="text-lg font-bold">{username}</span>
+          <Button variant="ghost" size="icon">
+            <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" className="h-5 w-5">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5Z" />
+            </svg>
+          </Button>
         </div>
-    );
+
+        <div className="px-2 pb-2">
+          {searchBar ? (
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" onClick={() => setSearchBar(false)}><ChevronLeft /></Button>
+              <Input placeholder="Search" className="bg-zinc-900 text-white" onClick={searchbarclicked} />
+            </div>
+          ) : (
+            <Input placeholder="Search" className="bg-zinc-900 text-white" onClick={searchbarclicked} />
+          )}
+
+          {users.length > 0 && searchBar && (
+            <div className="mt-2 space-y-2 overflow-y-auto max-h-[40vh]">
+              {users.map((u) => (
+                <Link href={`/direct/t/${u.user_id}`} key={u.user_id} className="block">
+                  <div className="w-full flex items-center gap-3 p-2 hover:bg-zinc-700 cursor-pointer">
+                    <img src={u.profile_picture} alt={u.username} className="w-12 h-12 rounded-full" />
+                    <div>
+                      <div className="text-sm font-medium">{u.fullname}</div>
+                      <div className="text-xs text-muted-foreground">@{u.username}</div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="px-4 text-xs text-muted-foreground mt-4">Messages</div>
+        <div className="px-4 text-xs text-blue-500">No messages found.</div>
+      </div>
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col bg-black text-white relative">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 bg-[#0d0d0d] sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <img src={user?.profile_picture} alt="User" className="w-10 h-10 rounded-full object-cover" />
+            <div>
+              <div className="text-sm font-semibold">{user?.fullname}</div>
+              <div className="text-xs text-gray-400">@{user?.username}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 text-gray-300">
+            <Phone size={20} className="hover:text-white cursor-pointer" />
+            <Video size={24} className="hover:text-white cursor-pointer" />
+            <Info size={24} className="hover:text-white cursor-pointer" />
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-2 scrollbar-thin scrollbar-thumb-zinc-700">
+          <div className="flex flex-col items-center justify-center py-8">
+            <img src={user?.profile_picture} alt="Profile" className="w-24 h-24 rounded-full object-cover" />
+            <div className="text-xl font-semibold mt-2">{user?.fullname}</div>
+            <div className="text-sm text-gray-400">{user?.username} · Instagram</div>
+            <Link href={`/${user?.username}`} className="bg-[#353535] px-4 py-1 rounded-md mt-2 hover:bg-[#444] text-sm">
+              View profile
+            </Link>
+          </div>
+
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.from === author_id ? "justify-end" : "justify-start"} items-end`}>
+              {msg.from !== author_id && (
+                <img src={user?.profile_picture} alt="User" className="w-6 h-6 rounded-full mr-2 object-cover" />
+              )}
+              <div className={`px-3 py-2 rounded-2xl max-w-xs text-sm break-words ${msg.from === author_id ? "bg-blue-600" : "bg-[#2c2c2c]"}`}>
+                {msg.text}
+              </div>
+            </div>
+          ))}
+
+          {isTyping && (
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+              <div className="text-sm text-gray-400">Typing...</div>
+            </div>
+          )}
+        </div>
+
+        {/* Input */}
+        <div className="border m-2 rounded-full border-zinc-800 px-6 py-3 bg-black flex items-center space-x-2 relative">
+
+          <Smile size={20} className="cursor-pointer" onClick={() => setShowEmojiPicker(prev => !prev)} />
+          <input
+            type="text"
+            placeholder="Message..."
+            className="flex-1 bg-transparent text-white outline-none placeholder-gray-400"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+            onKeyUp={handleTyping}
+          />
+          <button className="text-white text-lg cursor-pointer hover:text-blue-500" onClick={sendMessage}>
+            <ChevronRight className="w-7 h-7" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

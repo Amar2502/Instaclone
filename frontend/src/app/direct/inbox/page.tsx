@@ -1,9 +1,9 @@
 "use client";
 
-import MainLayout from "@/components/self/mainlayout";
 import { useSelector } from "react-redux";
 import LoadingHomepage from "@/components/self/loadinghomepage";
 import Inbox from "./inbox";
+import MessageLayout from "@/components/self/messagelayout";
 
 export default function Start() {
 
@@ -14,8 +14,8 @@ export default function Start() {
   }
 
   return (
-    <MainLayout >
+    <MessageLayout >
       <Inbox />
-    </MainLayout>
+    </MessageLayout>
   );
 }   
