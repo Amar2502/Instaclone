@@ -28,11 +28,47 @@ export default function Chat({ user_id }: ChatProps) {
   const [messages, setMessages] = useState<{ from: number; text: string }[]>([]);
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const author_id = useSelector((state: RootState) => state.auth.user_id) || 0;
   const username = useSelector((state: RootState) => state.auth.username);
+
+  const socket = useRef(getSocket());
+
+  useEffect(() => {
+    const fetchUserAndMessages = async () => {
+      try {
+        const [userRes, messagesRes] = await Promise.all([
+          axios.get(`http://localhost:8080/users/get-user-by-id/${user_id}`),
+          axios.get(`http://localhost:8080/messages/get-messages/${author_id}/${user_id}`)
+        ]);
+
+        setUser(userRes.data);
+        setMessages(messagesRes.data.messages.map((msg: any) => ({ from: msg.sender_id, text: msg.message })));
+      } catch (err) {
+        console.error("Failed to load chat data:", err);
+      }
+    };
+
+    fetchUserAndMessages();
+  }, [user_id]);
+
+  useEffect(() => {
+    if (!socket.current) return;
+
+    socket.current.on("receive-message", (senderId: number, text: string) => {
+      setMessages((prev) => [...prev, { from: senderId, text }]);
+    });
+
+    socket.current.on("is-typing", () => setIsTyping(true));
+    socket.current.on("stop-typing", () => setIsTyping(false));
+
+    return () => {
+      socket.current?.off("receive-message");
+      socket.current?.off("is-typing");
+      socket.current?.off("stop-typing");
+    };
+  }, []);
 
   const fetchConnectedUsers = async () => {
     try {
@@ -43,81 +79,40 @@ export default function Chat({ user_id }: ChatProps) {
     }
   };
 
-  const fetchUserById = async () => {
-    try {
-      const res = await axios.get(`http://localhost:8080/users/get-user-by-id/${user_id}`);
-      setUser(res.data);
-    } catch (err) {
-      console.error("Failed to load user:", err);
-    }
-  };
-
-  const searchbarclicked = () => {
+  const handleSearchClick = () => {
     setSearchBar(true);
-    if (users.length === 0) {
-      fetchConnectedUsers();
-    }
+    if (users.length === 0) fetchConnectedUsers();
   };
 
-  useEffect(() => {
-    fetchUserById();
-  }, [user_id]);
+  const sendMessage = async () => {
+    const trimmed = message.trim();
+    if (!trimmed) return;
 
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
+    try {
+      await axios.post("http://localhost:8080/messages/send-message", {
+        sender_id: author_id,
+        receiver_id: user_id,
+        message: trimmed,
+      });
 
-    const handleReceiveMessage = (senderId: number, text: string) => {
-      setMessages((prev) => [...prev, { from: senderId, text }]);
-    };
-
-    socket.on("receive-message", handleReceiveMessage);
-
-    return () => {
-      socket.off("receive-message", handleReceiveMessage);
-    };
-  }, []);
-
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
-
-    socket.on("is-typing", () => setIsTyping(true));
-    socket.on("stop-typing", () => setIsTyping(false));
-
-    return () => {
-      socket.off("is-typing");
-      socket.off("stop-typing");
-    };
-  }, []);
-
-  const sendMessage = () => {
-    const socket = getSocket();
-    if (!socket || !message.trim()) return;
-
-    socket.emit("send-message", author_id, user_id, message);
-    setMessages((prev) => [...prev, { from: author_id, text: message }]);
-    setMessage("");
-    setIsTyping(false);
-    socket.emit("stop-typing", user_id, author_id);
+      setMessages((prev) => [...prev, { from: author_id, text: trimmed }]);
+      setMessage("");
+      socket.current?.emit("send-message", author_id, user_id, trimmed);
+      socket.current?.emit("stop-typing", user_id, author_id);
+    } catch (err) {
+      console.error("Failed to send message:", err);
+    }
   };
 
   const handleTyping = () => {
-    const socket = getSocket();
-    if (!socket) return;
+    if (!socket.current) return;
 
-    socket.emit("is-typing", user_id, author_id);
-
-    if (message.trim() === "") {
-      socket.emit("stop-typing", user_id, author_id);
-      setIsTyping(false);
-      return;
-    }
+    socket.current.emit("is-typing", user_id, author_id);
 
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 
     typingTimeoutRef.current = setTimeout(() => {
-      socket.emit("stop-typing", user_id, author_id);
+      socket.current?.emit("stop-typing", user_id, author_id);
       setIsTyping(false);
     }, 2000);
   };
@@ -140,10 +135,10 @@ export default function Chat({ user_id }: ChatProps) {
           {searchBar ? (
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" onClick={() => setSearchBar(false)}><ChevronLeft /></Button>
-              <Input placeholder="Search" className="bg-zinc-900 text-white" onClick={searchbarclicked} />
+              <Input placeholder="Search" className="bg-zinc-900 text-white" onClick={handleSearchClick} />
             </div>
           ) : (
-            <Input placeholder="Search" className="bg-zinc-900 text-white" onClick={searchbarclicked} />
+            <Input placeholder="Search" className="bg-zinc-900 text-white" onClick={handleSearchClick} />
           )}
 
           {users.length > 0 && searchBar && (
@@ -217,8 +212,7 @@ export default function Chat({ user_id }: ChatProps) {
 
         {/* Input */}
         <div className="border m-2 rounded-full border-zinc-800 px-6 py-3 bg-black flex items-center space-x-2 relative">
-
-          <Smile size={20} className="cursor-pointer" onClick={() => setShowEmojiPicker(prev => !prev)} />
+          <Smile size={20} className="cursor-pointer" />
           <input
             type="text"
             placeholder="Message..."
