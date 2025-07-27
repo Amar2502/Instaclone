@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { registerUser, loginUser, getUserByUsername, getSomeAccounts } from "../controllers/user";
+import { registerUser, loginUser, getUserByUsername, getSomeAccounts, connectedToUsers, getUserById } from "../controllers/user";
 import isAuthenticated from "../middleware/isAuthenticated";
 import { isauth } from "../controllers/auth";
 import upload from "../middleware/file";
@@ -15,6 +15,7 @@ router.get("/search/:query", searchUserbyLetters as any);
 router.get("/:username", getUserByUsername as any);
 router.get("/get-some-accounts/:username", getSomeAccounts as any);
 router.post("/upload-profile-picture", upload.single('file'), setProfile as any);
-
+router.get("/connected-to-users/:user_id", connectedToUsers as any);
+router.get("/get-user-by-id/:user_id", getUserById as any);
 
 export default router;

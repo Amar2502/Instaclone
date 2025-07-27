@@ -14,6 +14,7 @@ export const setupSocketIO = (io: Server) => {
       if (userId) {
         onlineUsers.delete(userId);
         console.log(`❌ Disconnected: ${userId}`);
+        io.emit("online-users", Array.from(onlineUsers.keys()));
       } else {
         console.log(`❌ Socket disconnected: ${socket.id}`);
       }

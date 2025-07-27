@@ -173,7 +173,6 @@ export const getUserByUsername = async (req: Request, res: Response) => {
   }
 };
 
-
 export const getSomeAccounts = async (req: Request, res: Response) => {
   const { username } = req.params;
 
@@ -193,3 +192,56 @@ export const getSomeAccounts = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Internal Server Error' });
   }
 };
+
+export const connectedToUsers = async (req: Request, res: Response) => {
+  const { user_id } = req.params;
+
+  if (!user_id) {
+    return res.status(400).json({ message: "Missing user_id parameter" });
+  }
+
+  try {
+    // Step 1: Get follower IDs for the current user
+    const [rows] = await pool.query(
+      "SELECT following_id FROM followers WHERE follower_id = ? UNION SELECT following_id FROM followers WHERE follower_id = ?",
+      [user_id, user_id]
+    );
+
+    const followingIds = (rows as any[]).map(row => row.following_id);
+
+    if (followingIds.length === 0) {
+      return res.status(200).json([]); // No followers
+    }
+
+    // Step 2: Get user data of all followers
+    const [usersData] = await pool.query(
+      "SELECT user_id, username, profile_picture, fullname FROM users WHERE user_id IN (?)",
+      [followingIds]
+    );
+
+    return res.status(200).json(usersData);
+  } catch (error) {
+    console.error("❌ Error getting followings:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export const getUserById = async (req: Request, res: Response) => {
+  const { user_id } = req.params;
+
+  if (!user_id) {
+    return res.status(400).json({ message: "Missing user_id parameter" });
+  }
+
+  try {
+    const [usersData] = await pool.query<User[]>(
+      "SELECT user_id, username, profile_picture, fullname FROM users WHERE user_id = ?",
+      [user_id]
+    );
+
+    return res.status(200).json(usersData[0]);
+  } catch (error) {
+    console.error("❌ Error getting user by id:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+}

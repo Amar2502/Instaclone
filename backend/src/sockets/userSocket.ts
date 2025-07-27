@@ -10,6 +10,7 @@ export const registerUserSocketHandlers = (
     (socket as any).userId = userId;
     console.log(`✅ User ${userId} joined with socket ${socket.id}`);
     console.log(onlineUsers);
+    socket.emit("online-users", Array.from(onlineUsers.keys()));
   });
 
   // Add other events here

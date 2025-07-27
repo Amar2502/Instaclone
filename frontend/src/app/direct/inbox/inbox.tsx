@@ -2,15 +2,60 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CircleUserRound, Send } from "lucide-react";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { useSelector } from "react-redux";
+import type { RootState } from '@/app/redux/store';
+import { ChevronLeft } from "lucide-react";
+import Link from "next/link";
+
+interface Users {
+  user_id: number;
+  username: string;
+  profile_picture: string;
+  fullname: string;
+}
 
 export default function Inbox() {
+
+  const [users, setUsers] = useState<Users[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchBar, setSearchBar] = useState(false);
+  const user_id = useSelector((state: RootState) => state.auth.user_id);
+  const username = useSelector((state: RootState) => state.auth.username);
+
+  console.log(user_id);
+
+  const fetchConnectedUsers = async () => {
+    try {
+      const res = await axios.get(
+        `http://localhost:8080/users/connected-to-users/${user_id}`
+      );
+      setUsers(res.data);
+    } catch (err) {
+      console.error("Failed to load followers:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const searchbarclicked = () => {
+    setSearchBar(true);
+    if (users.length > 0) {
+      return;
+    }
+    setLoading(true);
+    fetchConnectedUsers();
+  }
+
+  console.log(users);
+
   return (
     <div className="flex h-screen bg-black text-white">
       {/* Sidebar */}
       <div className="w-[300px] border-r border-zinc-800 flex flex-col">
         <div className="p-4 flex items-center justify-between">
-          <span className="text-lg font-bold">amar.pa25</span>
+          <span className="text-lg font-bold">{username}</span>
           <Button variant="ghost" size="icon">
             <svg
               stroke="currentColor"
@@ -26,8 +71,36 @@ export default function Inbox() {
           </Button>
         </div>
 
-        <div className="px-4 pb-2">
-          <Input placeholder="Search" className="bg-zinc-900 text-white" />
+        <div className="px-2 pb-2">
+          {searchBar ? (
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" className="cursor-pointer" onClick={() => setSearchBar(false)}><ChevronLeft /></Button>
+              <Input placeholder="Search" className="bg-zinc-900 text-white" onClick={searchbarclicked} />
+            </div>
+          ) : (
+            <Input placeholder="Search" className="bg-zinc-900 text-white" onClick={searchbarclicked} />
+          )}
+          {users.length > 0 && searchBar && (
+
+            <div className="mt-2 space-y-2 overflow-y-auto">
+              {users.map((user) => (
+                <Link href={`/direct/t/${user.user_id}`} className="w-full flex items-center gap-3">
+                  <div key={user.user_id} className="w-full flex items-center gap-3 p- hover:bg-zinc-700 cursor-pointer">
+                    <img
+                      src={user.profile_picture}
+                      alt={user.username}
+                      className="w-12 h-12 rounded-full"
+                    />
+                    <div>
+                      <div className="text-sm font-medium">{user.fullname}</div>
+                      <div className="text-xs text-muted-foreground">@{user.username}</div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+          )}
         </div>
 
         <div className="px-4 text-xs text-muted-foreground mt-4">Messages</div>
