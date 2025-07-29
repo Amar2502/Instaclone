@@ -16,20 +16,42 @@ interface Users {
   fullname: string;
 }
 
+interface PreviousMessagesProfiles {
+  message_id: number;
+  sender_id: number;
+  receiver_id: number;
+  message: string;
+  timesent: string;
+  user_id: number;
+  profile_picture: string;
+  fullname: string;
+}
+
 export default function Inbox() {
 
   const [users, setUsers] = useState<Users[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchBar, setSearchBar] = useState(false);
-  const user_id = useSelector((state: RootState) => state.auth.user_id);
+  const author_id = useSelector((state: RootState) => state.auth.user_id);
   const username = useSelector((state: RootState) => state.auth.username);
+  const [previousMessagesProfiles, setPreviousMessagesProfiles] = useState<PreviousMessagesProfiles[]>([]);
 
-  console.log(user_id);
+  console.log(author_id);
+
+  const fetchPreviousMessagesProfiles = async () => {
+    try {
+      const res = await axios.get(`http://localhost:8080/messages/previous-messages-profiles/${author_id}`);
+      console.log(res.data);
+      setPreviousMessagesProfiles(res.data.profiles);
+    } catch (err) {
+      console.error("Failed to load previous messages profiles:", err);
+    }
+  }
 
   const fetchConnectedUsers = async () => {
     try {
       const res = await axios.get(
-        `http://localhost:8080/users/connected-to-users/${user_id}`
+        `http://localhost:8080/users/connected-to-users/${author_id}`
       );
       setUsers(res.data);
     } catch (err) {
@@ -38,6 +60,10 @@ export default function Inbox() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchPreviousMessagesProfiles();
+  }, []);
 
   const searchbarclicked = () => {
     setSearchBar(true);
@@ -48,7 +74,7 @@ export default function Inbox() {
     fetchConnectedUsers();
   }
 
-  console.log(users);
+  console.log("previousMessagesProfiles", previousMessagesProfiles);
 
   return (
     <div className="flex h-screen bg-black text-white">
@@ -103,8 +129,31 @@ export default function Inbox() {
           )}
         </div>
 
-        <div className="px-4 text-xs text-muted-foreground mt-4">Messages</div>
-        <div className="px-4 text-xs text-blue-500">No messages found.</div>
+        {previousMessagesProfiles.length > 0 ? (
+          <div className="mt-2 space-y-2 overflow-y-auto">
+            {previousMessagesProfiles.map((user) => (
+              <Link href={`/direct/t/${user.sender_id === author_id ? user.receiver_id : user.sender_id}`} className="w-full flex items-center gap-3">
+                <div key={user.user_id} className="w-full flex items-center gap-3 p- hover:bg-zinc-700 cursor-pointer">
+                  <img
+                    src={user.profile_picture}
+                    alt={user.fullname}
+                    className="w-12 h-12 rounded-full"
+                  />
+                  <div>
+                    <div className="text-sm font-medium">{user.fullname}</div>
+                    {user.sender_id === author_id ? (
+                      <div className="text-xs text-muted-foreground">You: {user.message}</div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">{user.message}</div>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="px-4 text-xs text-muted-foreground mt-4">No messages found.</div>
+        )}
       </div>
 
       {/* Message Area */}
@@ -129,6 +178,6 @@ export default function Inbox() {
           <Button className="bg-blue-600 hover:bg-blue-700">Send message</Button>
         </div>
       </div>
-    </div>
+    </div >
   );
 }

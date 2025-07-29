@@ -17,6 +17,17 @@ interface Users {
   fullname: string;
 }
 
+interface PreviousMessagesProfiles {
+  message_id: number;
+  sender_id: number;
+  receiver_id: number;
+  message: string;
+  timesent: string;
+  user_id: number;
+  profile_picture: string;
+  fullname: string;
+}
+
 interface ChatProps {
   user_id: number;
 }
@@ -29,9 +40,26 @@ export default function Chat({ user_id }: ChatProps) {
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
+  const [previousMessagesProfiles, setPreviousMessagesProfiles] = useState<PreviousMessagesProfiles[]>([]);
   const author_id = useSelector((state: RootState) => state.auth.user_id) || 0;
   const username = useSelector((state: RootState) => state.auth.username);
+
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+
+  const isUserAtBottom = () => {
+    const el = messagesContainerRef.current;
+    if (!el) return false;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 150; // within 150px of bottom
+  };
+
+  useEffect(() => {
+    if (isUserAtBottom()) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
 
   const socket = useRef(getSocket());
 
@@ -51,7 +79,18 @@ export default function Chat({ user_id }: ChatProps) {
     };
 
     fetchUserAndMessages();
+    fetchPreviousMessagesProfiles();
   }, [user_id]);
+
+  const fetchPreviousMessagesProfiles = async () => {
+    try {
+      const res = await axios.get(`http://localhost:8080/messages/previous-messages-profiles/${author_id}`);
+      console.log(res.data);
+      setPreviousMessagesProfiles(res.data.profiles);
+    } catch (err) {
+      console.error("Failed to load previous messages profiles:", err);
+    }
+  }
 
   useEffect(() => {
     if (!socket.current) return;
@@ -117,6 +156,12 @@ export default function Chat({ user_id }: ChatProps) {
     }, 2000);
   };
 
+  useEffect(() => {
+    if (message.length > 0) {
+      socket.current.emit("stop-typing", user_id, author_id);
+    }
+  }, [message]);
+
   return (
     <div className="flex h-screen bg-black text-white">
       {/* Sidebar */}
@@ -158,8 +203,35 @@ export default function Chat({ user_id }: ChatProps) {
           )}
         </div>
 
-        <div className="px-4 text-xs text-muted-foreground mt-4">Messages</div>
-        <div className="px-4 text-xs text-blue-500">No messages found.</div>
+        {previousMessagesProfiles.length > 0 ? (
+          <div className="mt-2 space-y-2 overflow-y-auto">
+            {previousMessagesProfiles.map((user) => (
+              <Link
+                key={user.message_id} // or use user.user_id if unique
+                href={`/direct/t/${user.sender_id === author_id ? user.receiver_id : user.sender_id}`}
+                className="w-full flex items-center gap-3"
+              >
+                <div className="w-full flex items-center gap-3 p-2 hover:bg-zinc-700 cursor-pointer">
+                  <img
+                    src={user.profile_picture}
+                    alt={user.fullname}
+                    className="w-12 h-12 rounded-full"
+                  />
+                  <div>
+                    <div className="text-sm font-medium">{user.fullname}</div>
+                    {user.sender_id === author_id ? (
+                      <div className="text-xs text-muted-foreground">You: {user.message}</div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">{user.message}</div>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="px-4 text-xs text-muted-foreground mt-4">No messages found.</div>
+        )}
       </div>
 
       {/* Main Chat Area */}
@@ -180,23 +252,39 @@ export default function Chat({ user_id }: ChatProps) {
           </div>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-2 scrollbar-thin scrollbar-thumb-zinc-700">
+        {/* Messages Section */}
+        <div
+          ref={messagesContainerRef}
+          className="flex-1 overflow-y-auto px-6 py-4 space-y-2 scrollbar-thin scrollbar-thumb-zinc-700"
+        >
           <div className="flex flex-col items-center justify-center py-8">
             <img src={user?.profile_picture} alt="Profile" className="w-24 h-24 rounded-full object-cover" />
             <div className="text-xl font-semibold mt-2">{user?.fullname}</div>
             <div className="text-sm text-gray-400">{user?.username} · Instagram</div>
-            <Link href={`/${user?.username}`} className="bg-[#353535] px-4 py-1 rounded-md mt-2 hover:bg-[#444] text-sm">
+            <Link
+              href={`/${user?.username}`}
+              className="bg-[#353535] px-4 py-1 rounded-md mt-2 hover:bg-[#444] text-sm"
+            >
               View profile
             </Link>
           </div>
 
           {messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.from === author_id ? "justify-end" : "justify-start"} items-end`}>
+            <div
+              key={i}
+              className={`flex ${msg.from === author_id ? "justify-end" : "justify-start"} items-end`}
+            >
               {msg.from !== author_id && (
-                <img src={user?.profile_picture} alt="User" className="w-6 h-6 rounded-full mr-2 object-cover" />
+                <img
+                  src={user?.profile_picture}
+                  alt="User"
+                  className="w-6 h-6 rounded-full mr-2 object-cover"
+                />
               )}
-              <div className={`px-3 py-2 rounded-2xl max-w-xs text-sm break-words ${msg.from === author_id ? "bg-blue-600" : "bg-[#2c2c2c]"}`}>
+              <div
+                className={`px-3 py-2 rounded-2xl max-w-xs text-sm break-words ${msg.from === author_id ? "bg-blue-600" : "bg-[#2c2c2c]"
+                  }`}
+              >
                 {msg.text}
               </div>
             </div>
@@ -208,7 +296,10 @@ export default function Chat({ user_id }: ChatProps) {
               <div className="text-sm text-gray-400">Typing...</div>
             </div>
           )}
+
+          <div ref={messagesEndRef} />
         </div>
+
 
         {/* Input */}
         <div className="border m-2 rounded-full border-zinc-800 px-6 py-3 bg-black flex items-center space-x-2 relative">
