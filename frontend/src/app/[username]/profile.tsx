@@ -266,7 +266,7 @@ export default function Profile() {
             <div className="text-center py-10">Loading profile...</div>
           ) : (
             <>
-              {activeTab === 'posts' && <Posts user_id={user.user_id} username={user.username} />}
+              {activeTab === 'posts' && <Posts User={user} />}
               {isAuthor && activeTab === 'saved' && <Saved />}
               {activeTab === 'tagged' && <Tagged username={user.username} />}
             </>

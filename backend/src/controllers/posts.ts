@@ -55,7 +55,7 @@ export const getPosts = async (req: Request, res: Response) => {
 
   try {
     const [posts] = await pool.query(
-      "SELECT content_id, media, content_type, caption, created_at, likes, comments FROM content WHERE user_id = ?",
+      "SELECT content_id, media, content_type, caption, created_at, likes, comments FROM content WHERE user_id = ? ORDER BY created_at DESC",
       [user_id]
     );
 
